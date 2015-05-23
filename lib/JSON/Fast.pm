@@ -33,22 +33,30 @@ my sub nom-ws(str $text, int $pos is rw) {
     loop {
         my int $wsord = nqp::ordat($text, $pos);
         last unless $wsord == 32 || $wsord == 10 || $wsord == 13 || $wsord == 9;
-        $pos = $pos + 1;
+        ++$pos;
     }
-    CATCH {
-        die "reached the end of the string while looking for things";
-    }
+    0;
 }
 
+constant %escaping_hash =
+    { '"'  => '"',
+      '\\' => '\\',
+      '/'  => '/',
+      'b'  => "\b",
+      'f'  => chr(0x0c),
+      'n'  => "\n",
+      'r'  => "\r",
+      't'  => "\t",
+    };
+
 my sub parse-string(str $text, int $pos is rw) {
-    # fast-path a search through the string for the first "special" character ...
     my int $startpos = $pos;
 
     my str $result;
 
     loop {
-        my $ord := nqp::ordat($text, $pos);
-        $pos = $pos + 1;
+        my int $ord = nqp::ordat($text, $pos);
+        ++$pos;
 
         if $ord == 34 { # "
             $result = nqp::substr($text, $startpos, $pos - 1 - $startpos);
@@ -59,41 +67,27 @@ my sub parse-string(str $text, int $pos is rw) {
             $result = substr($text, $startpos, $pos - 1 - $startpos);
             @pieces.push: $result;
 
-            my $kind := nqp::substr($text, $pos, 1);
+            my str $kind = nqp::substr($text, $pos, 1);
 
-            if $kind eq '"' {
-                @pieces.push: '"';
-            } elsif $kind eq '\\' {
-                @pieces.push: '\\';
-            } elsif $kind eq '/' {
-                @pieces.push: '/';
-            } elsif $kind eq 'b' {
-                @pieces.push: "\b";
-            } elsif $kind eq 'f' {
-                @pieces.push: chr(0x0c);
-            } elsif $kind eq 'n' {
-                @pieces.push: "\n";
-            } elsif $kind eq 'r' {
-                @pieces.push: "\r";
-            } elsif $kind eq 't' {
-                @pieces.push: "\t";
-            } elsif $kind eq 'u' {
+            @pieces.push(my $hashresult) if $hashresult = %escaping_hash{$kind} // "";
+
+            if not $hashresult and $kind eq 'u' {
                 my $hexstr := nqp::substr($text, $pos + 1, 4);
                 if nqp::chars($hexstr) != 4 {
                     die "expected exactly four alnum digits after \\u";
                 }
                 @pieces.push: chr(:16($hexstr));
-                $pos = $pos + 4;
-            } else {
+                $pos += 4;
+            } elsif not $hashresult {
                 die "I don't understand the escape sequence \\$kind";
             }
 
             if nqp::eqat($text, '"', $pos + 1) {
                 $result = $result ~ @pieces[1];
-                $pos = $pos + 2;
+                $pos += 2;
                 last;
             } else {
-                $pos = $pos + 1;
+                ++$pos;
                 @pieces.push: parse-string($text, $pos);
                 $result = @pieces.join("");
                 last;
@@ -109,26 +103,26 @@ my sub parse-string(str $text, int $pos is rw) {
 my sub parse-numeric(str $text, int $pos is rw) {
     my int $startpos = $pos;
 
-    $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
+    ++$pos while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
 
     my $residual := nqp::substr($text, $pos, 1);
 
     if $residual eq '.' {
-        $pos = $pos + 1;
+        ++$pos;
 
-        $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
+        ++$pos while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
 
         $residual := nqp::substr($text, $pos, 1);
     }
     
     if $residual eq 'e' || $residual eq 'E' {
-        $pos = $pos + 1;
+        ++$pos;
 
         if nqp::eqat($text, '-', $pos) || nqp::eqat($text, '+', $pos) {
-            $pos = $pos + 1;
+            ++$pos;
         }
 
-        $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
+        ++$pos while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
     }
 
     +(my $result := nqp::substr($text, $startpos - 1, $pos - $startpos + 1)) // die "invalid number token $result.perl()";
@@ -150,22 +144,24 @@ my sub parse-obj(str $text, int $pos is rw) {
     my $key;
     my $value;
 
+    my %string_intern := %*string_intern;
+
     nom-ws($text, $pos);
 
     if nqp::eqat($text, '}', $pos) {
-        $pos = $pos + 1;
+        ++$pos;
         %();
     } else {
         loop {
             my $thing;
 
-            if defined $key {
+            if $key.defined {
                 $thing = parse-thing($text, $pos)
             } else {
                 nom-ws($text, $pos);
 
                 if nqp::eqat($text, '"', $pos) {
-                    $pos = $pos + 1;
+                    ++$pos;
                     $thing = parse-string($text, $pos)
                 } else {
                     die "json requires object keys to be strings";
@@ -174,18 +170,18 @@ my sub parse-obj(str $text, int $pos is rw) {
             nom-ws($text, $pos);
 
             my $partitioner := nqp::substr($text, $pos, 1);
-            $pos = $pos + 1;
+            ++$pos;
 
-            if $partitioner eq ':'      and not defined $key and not defined $value {
-                $key = $thing;
-            } elsif $partitioner eq ',' and     defined $key and not defined $value {
+            if $partitioner eq ':'      and not $key.defined and not $value.defined {
+                $key = (%string_intern{$thing} //= $thing);
+            } elsif $partitioner eq ',' and     $key.defined and not $value.defined {
                 $value = $thing;
 
                 %result{$key} = $value;
 
                 $key   = Nil;
                 $value = Nil;
-            } elsif $partitioner eq '}' and     defined $key and not defined $value {
+            } elsif $partitioner eq '}' and     $key.defined and not $value.defined {
                 $value = $thing;
 
                 %result{$key} = $value;
@@ -205,7 +201,7 @@ my sub parse-array(str $text, int $pos is rw) {
     nom-ws($text, $pos);
 
     if nqp::eqat($text, ']', $pos) {
-        $pos = $pos + 1;
+        ++$pos;
         [];
     } else {
         loop {
@@ -213,7 +209,7 @@ my sub parse-array(str $text, int $pos is rw) {
             nom-ws($text, $pos);
 
             my str $partitioner = nqp::substr($text, $pos, 1);
-            $pos = $pos + 1;
+            ++$pos;
 
             if $partitioner eq ']' {
                 @result.push: $thing;
@@ -233,7 +229,7 @@ my sub parse-thing(str $text, int $pos is rw) {
 
     my str $initial = nqp::substr($text, $pos, 1);
 
-    $pos = $pos + 1;
+    ++$pos;
 
     if $initial eq '"' {
         parse-string($text, $pos);
@@ -247,12 +243,12 @@ my sub parse-thing(str $text, int $pos is rw) {
         parse-null($text, $pos);
     } elsif $initial eq 't' {
         if nqp::eqat($text, 'rue', $pos) {
-            $pos = $pos + 3;
+            $pos += 3;
             True
         }
     } elsif $initial eq 'f' {
         if nqp::eqat($text, 'alse', $pos) {
-            $pos = $pos + 4;
+            $pos += 4;
             False
         }
     } else {
@@ -266,11 +262,13 @@ sub from-json(Str() $text) is export {
 
     my int $pos = 0;
 
+    my %*string_intern;
+
     nom-ws($text, $pos);
 
     my str $initial = nqp::substr($text, $pos, 1);
 
-    $pos = $pos + 1;
+    ++$pos;
 
     my $result;
 
