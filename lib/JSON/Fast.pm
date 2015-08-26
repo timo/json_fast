@@ -113,9 +113,7 @@ my sub parse-string(str $text, int $pos is rw) {
                 last;
             }
         } elsif $ord < 14 && ($ord == 10 || $ord == 13 || $ord == 9) {
-            say $text.subst(/"\n"/, "\\n", :g);
-            say ('-' x $pos-1) ~ '^ error';
-            die "the only whitespace allowed in json strings are spaces (got: $ord)";
+            die "the only whitespace allowed in json strings are spaces";
         }
     }
     
