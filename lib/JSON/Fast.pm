@@ -10,13 +10,17 @@ sub str-escape(str $text) {
               .subst(/'"'/,  '\\"',  :g);  
 }
 
-sub to-json($obj, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
+sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
     return "{$obj}" if $obj ~~ Int|Rat;
     return "{$obj ?? 'true' !! 'false'}" if $obj ~~ Bool;
     return "\"{str-escape($obj)}\"" if $obj ~~ Str;
 
+    if $obj ~~ Seq {
+        $obj = $obj.cache
+    }
+
     my int  $lvl  = $level;
-    my Bool $arr  = $obj ~~ Array;
+    my Bool $arr  = $obj ~~ Positional;
     my str  $out ~= $arr ?? '[' !! '{';
     my $spacer   := sub {
         $out ~= "\n" ~ (' ' x $lvl*$spacing) if $pretty;
