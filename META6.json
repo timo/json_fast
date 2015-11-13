@@ -6,6 +6,10 @@
   "test-depends" : [
     "Test"
   ],
+  "authors" : [
+      "Timo Paulssen",
+      "Tony O'Dell"
+  ],
   "provides" : {
     "JSON::Fast" : "lib/JSON/Fast.pm"
   },
