@@ -11,8 +11,8 @@ sub str-escape(str $text) {
 }
 
 sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
-    return "{$obj ?? 'true' !! 'false'}" if $obj ~~ Bool;
-    return "{$obj}" if $obj ~~ Int|Rat;
+    return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
+    return $obj.Str if $obj ~~ Int|Rat;
     return "\"{str-escape($obj)}\"" if $obj ~~ Str;
 
     if $obj ~~ Seq {
