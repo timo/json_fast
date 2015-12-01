@@ -49,7 +49,7 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
 
 my sub nom-ws(str $text, int $pos is rw) {
     my int $wsord;
-    SEQ(
+    STATEMENT_LIST(
         $wsord = nqp::ordat($text, $pos);
         last unless $wsord == 32 || $wsord == 10 || $wsord == 13 || $wsord == 9;
         $pos = $pos + 1;
