@@ -78,6 +78,7 @@ my sub parse-string(str $text, int $pos is rw) {
             $result = substr($text, $startpos, $pos - 1 - $startpos);
             @pieces.push: $result;
 
+            die "reached end of string while looking for end of quoted string." if $pos > nqp::chars($text);
             if nqp::eqat($text, '"', $pos) {
                 @pieces.push: '"';
             } elsif nqp::eqat($text, '\\', $pos) {
@@ -175,6 +176,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                     $pos = $pos + 1;
                     $thing = parse-string($text, $pos)
                 } else {
+                    die "at end of string: expected a quoted string for an object key" if $pos == nqp::chars($text);
                     die "at $pos: json requires object keys to be strings";
                 }
             }
@@ -198,6 +200,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                 $pos = $pos + 1;
                 last;
             } else {
+                die "at end of string: unexpected end of object." if $pos == nqp::chars($text);
                 die "unexpected { nqp::substr($text, $pos, 1) } in an object at $pos";
             }
 
