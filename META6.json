@@ -1,5 +1,5 @@
 {
-  "perl" : "v6",
+  "perl" : "6",
   "name" : "JSON::Fast",
   "description" : "A naive, fast json parser and serializer; drop-in replacement for JSON::Tiny",
   "version" : "v0.3",
