@@ -169,7 +169,7 @@ my sub parse-obj(str $text, int $pos is rw) {
         loop {
             my $thing;
 
-            if defined $key {
+            if $key.DEFINITE {
                 $thing = parse-thing($text, $pos)
             } else {
                 nom-ws($text, $pos);
@@ -186,16 +186,16 @@ my sub parse-obj(str $text, int $pos is rw) {
 
             #my str $partitioner = nqp::substr($text, $pos, 1);
 
-            if nqp::eqat($text, ':', $pos)      and not defined $key and not defined $value {
+            if nqp::eqat($text, ':', $pos)      and !($key.DEFINITE or $value.DEFINITE) {
                 $key = $thing;
-            } elsif nqp::eqat($text, ',', $pos) and     defined $key and not defined $value {
+            } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
 
                 %result{$key} = $value;
 
-                $key   = Nil;
-                $value = Nil;
-            } elsif nqp::eqat($text, '}', $pos) and     defined $key and not defined $value {
+                $key   = Any;
+                $value = Any;
+            } elsif nqp::eqat($text, '}', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
 
                 %result{$key} = $value;
