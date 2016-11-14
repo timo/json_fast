@@ -50,14 +50,15 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
 
 my sub nom-ws(str $text, int $pos is rw) {
     my int $wsord;
-    STATEMENT_LIST(
-        $wsord = nqp::ordat($text, $pos);
-        last unless $wsord == 32 || $wsord == 10 || $wsord == 13 || $wsord == 9;
-        $pos = $pos + 1;
-    ) while True;
-    CATCH {
-        die "at $pos: reached the end of the string while looking for things";
-    }
+    nqp::handle(
+        nqp::while(1,
+            nqp::stmts(
+                ($wsord = nqp::ordat($text, $pos)),
+                (last unless $wsord == 32 || $wsord == 10 || $wsord == 13 || $wsord == 9),
+                ($pos = $pos + 1)
+            )),
+            'CATCH',
+            (die "reached end of string when looking for something"));
 }
 
 my sub parse-string(str $text, int $pos is rw) {
