@@ -67,8 +67,12 @@ my sub parse-string(str $text, int $pos is rw) {
 
     my str $result;
 
+    my int $ord;
+
+    my @pieces;
+
     loop {
-        my int $ord = nqp::ordat($text, $pos);
+        $ord = nqp::ordat($text, $pos);
         $pos = $pos + 1;
         die "reached end of string while looking for end of quoted string." if $pos > nqp::chars($text);
 
@@ -76,8 +80,6 @@ my sub parse-string(str $text, int $pos is rw) {
             $result = nqp::substr($text, $startpos, $pos - 1 - $startpos);
             last;
         } elsif $ord == 92 { # \
-            my @pieces;
-
             $result = substr($text, $startpos, $pos - 1 - $startpos);
             @pieces.push: $result;
 
@@ -223,11 +225,13 @@ my sub parse-array(str $text, int $pos is rw) {
         $pos = $pos + 1;
         [];
     } else {
+        my $thing;
+        my str $partitioner;
         loop {
-            my $thing = parse-thing($text, $pos);
+            $thing = parse-thing($text, $pos);
             nom-ws($text, $pos);
 
-            my str $partitioner = nqp::substr($text, $pos, 1);
+            $partitioner = nqp::substr($text, $pos, 1);
             $pos = $pos + 1;
 
             if $partitioner eq ']' {
