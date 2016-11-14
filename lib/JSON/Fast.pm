@@ -166,8 +166,9 @@ my sub parse-obj(str $text, int $pos is rw) {
         $pos = $pos + 1;
         %();
     } else {
+        my $thing;
         loop {
-            my $thing;
+            $thing = Any;
 
             if $key.DEFINITE {
                 $thing = parse-thing($text, $pos)
