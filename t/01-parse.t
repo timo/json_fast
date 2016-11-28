@@ -31,6 +31,11 @@ my @t =
     Q<<{ "e": 0.123456789e-12 }>>,
     Q<<{ "E": 1.234567890E+34 }>>,
     Q<<{ "":  23456789012E66 }>>,
+    Q<<"A JSON payload is allowed to be a string.">>,
+    Q<<99>>,
+    Q<<5e1>>,
+    Q<<-1>>,
+    Q<<true>>,
     Q<<{ "zero": 0 }>>,
     Q<<{ "one": 1 }>>,
     Q<<{ "space": " " }>>,
@@ -152,7 +157,6 @@ my @n =
     '{ 3 : tru }',  # not quite true
     '{ "a : false }', # missing quote
     # stolen from JSON::XS, 18_json_checker.t
-    Q<<"A JSON payload should be an object or array, not a string.">>,
     Q<<{"Extra value after close": true} "misplaced quoted value">>,
     Q<<{"Illegal expression": 1 + 2}>>,
     Q<<{"Illegal invocation": alert()}>>,

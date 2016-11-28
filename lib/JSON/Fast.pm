@@ -295,21 +295,7 @@ sub from-json(Str() $text) is export {
 
     my int $pos = 0;
 
-    nom-ws($text, $pos);
-
-    my str $initial = nqp::substr($text, $pos, 1);
-
-    $pos = $pos + 1;
-
-    my $result;
-
-    if $initial eq '{' {
-        $result = parse-obj($ntext, $pos);
-    } elsif $initial eq '[' {
-        $result = parse-array($ntext, $pos);
-    } else {
-        die "a JSON string ought to be a list or an object";
-    }
+    my $result = parse-thing($text, $pos);
 
     try nom-ws($text, $pos);
 
