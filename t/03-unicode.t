@@ -1,5 +1,6 @@
+#!/usr/bin/env perl6
 use v6;
-
+use lib 'lib';
 use JSON::Fast;
 use Test;
 
@@ -8,7 +9,7 @@ my @t =
     '{ "a" : "b\u00E5" }' => { 'a' => 'bå' },
     '[ "\u2685" ]' => [ '⚅' ];
 
-my @out = 
+my @out =
     "\{\"a\": \"bå\"}",
     '["⚅"]';
 
