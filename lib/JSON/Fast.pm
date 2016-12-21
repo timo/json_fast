@@ -3,11 +3,12 @@ use nqp;
 unit module JSON::Fast;
 
 sub str-escape(str $text) {
-  return $text.subst(/'\\'/, '\\\\', :g)\ 
-              .subst(/"\n"/, '\\n',  :g)\
-              .subst(/"\r"/, '\\r',  :g)\
-              .subst(/"\t"/, '\\t',  :g)\
-              .subst(/'"'/,  '\\"',  :g);  
+    return $text.subst('\\', '\\\\',    :g)\
+                .subst("\n", '\\n',     :g)\
+                .subst("\r", '\\r',     :g)\
+                .subst("\t", '\\t',     :g)\
+                .subst('"',  '\\"',     :g)\
+                .subst("\0", '\\u0000', :g);
 }
 
 sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
@@ -142,7 +143,7 @@ my sub parse-numeric(str $text, int $pos is rw) {
 
         $residual := nqp::substr($text, $pos, 1);
     }
-    
+
     if $residual eq 'e' || $residual eq 'E' {
         $pos = $pos + 1;
 

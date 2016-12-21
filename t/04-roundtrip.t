@@ -1,8 +1,9 @@
+#!/usr/bin/env perl6
 use Test;
-
+use lib 'lib';
 use JSON::Fast;
 
-my @s = 
+my @s =
         'Int'            => [ 1 ],
         'Rat'            => [ 3.2 ],
         'Str'            => [ 'one' ],
