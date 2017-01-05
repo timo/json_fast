@@ -1,5 +1,5 @@
 # JSON::Fast
-[![Build Status](https://travis-ci.org/timo/json_fast.svg?branch=master)](https://travis-ci.org/timo/json_fast.svg?branch=master)
+[![Build Status](https://travis-ci.org/timo/json_fast.svg?branch=master)](https://travis-ci.org/timo/json_fast)
 
 a naive imperative json parser in pure perl6 (but with direct access to nqp:: ops), to evaluate performance against JSON::Tiny. It is a drop-in replacement for JSON::Tiny's from-json sub.
 
