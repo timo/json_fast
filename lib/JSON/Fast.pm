@@ -4,6 +4,7 @@ unit module JSON::Fast;
 
 sub str-escape(str $text) {
     return $text.subst('\\', '\\\\',    :g)\
+                .subst("\r\n", '\\r\\n',:g)\
                 .subst("\n", '\\n',     :g)\
                 .subst("\r", '\\r',     :g)\
                 .subst("\t", '\\t',     :g)\

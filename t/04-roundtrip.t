@@ -31,7 +31,13 @@ my @s =
                                 keyfive  => False,
                                 keysix   => True,
                                 keyseven => 3.2,
-                            };
+                            },
+        'Escapes' => { cr => "AB\nC",
+                       crlf => "AB\r\nC",
+                       lfcr => "AB\n\rC",
+                     }
+                                 
+                                 
 
 plan +@s;
 
