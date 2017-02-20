@@ -17,7 +17,11 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
 
     if $obj ~~ Num {
         if $obj === NaN || $obj === -Inf || $obj === Inf {
-            return "null";
+            if try $*JSON_NAN_INF_SUPPORT {
+                return $obj.Str;
+            } else {
+                return "null";
+            }
         } else {
             return $obj.Str;
         }

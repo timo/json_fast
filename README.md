@@ -14,6 +14,7 @@ This module also includes a very fast to-json function that tony-o created in to
 ## `to-json`
 
 ```perl6
+    my $*JSON_NAN_INF_SUPPORT = 1; # allow NaN, Inf, and -Inf to be serialized.
     say to-json [<my Perl data structure>];
     say to-json [<my Perl data structure>], :!pretty;
     say to-json [<my Perl data structure>], :spacing(4);
