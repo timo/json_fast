@@ -75,6 +75,12 @@ my sub nom-ws(str $text, int $pos is rw) {
             (die "reached end of string when looking for something"));
 }
 
+my sub tear-off-combiners(str $text, int $pos) {
+    my str $combinerstuff = nqp::substr($text, $pos, 1);
+    my Uni $parts = $combinerstuff.NFD;
+    return $parts[1..*].map({$^ord.chr()}).join()
+}
+
 my sub parse-string(str $text, int $pos is rw) {
     # fast-path a search through the string for the first "special" character ...
     my int $startpos = $pos;
@@ -85,16 +91,22 @@ my sub parse-string(str $text, int $pos is rw) {
 
     my @pieces;
 
+    unless nqp::eqat($text, '"', $startpos - 1) {
+        # If the ord matches, but it doesn't eq, then we have lone
+        # combining characters at the start of the string.
+        $result = tear-off-combiners($text, $startpos - 1);
+    }
+
     loop {
         $ord = nqp::ordat($text, $pos);
         $pos = $pos + 1;
         die "reached end of string while looking for end of quoted string." if $pos > nqp::chars($text);
 
         if $ord == 34 { # "
-            $result = nqp::substr($text, $startpos, $pos - 1 - $startpos);
+            $result = $result ~ nqp::substr($text, $startpos, $pos - 1 - $startpos);
             last;
         } elsif $ord == 92 { # \
-            $result = substr($text, $startpos, $pos - 1 - $startpos);
+            $result = $result ~ substr($text, $startpos, $pos - 1 - $startpos);
             @pieces.push: $result;
 
             if nqp::eqat($text, '"', $pos) {
@@ -191,7 +203,7 @@ my sub parse-obj(str $text, int $pos is rw) {
             } else {
                 nom-ws($text, $pos);
 
-                if nqp::eqat($text, '"', $pos) {
+                if nqp::ordat($text, $pos) == 34 { # "
                     $pos = $pos + 1;
                     $thing = parse-string($text, $pos)
                 } else {
@@ -268,7 +280,7 @@ my sub parse-thing(str $text, int $pos is rw) {
 
     $pos = $pos + 1;
 
-    if $initial eq '"' {
+    if ord($initial) == 34 { # "
         parse-string($text, $pos);
     } elsif $initial eq '[' {
         parse-array($text, $pos);
