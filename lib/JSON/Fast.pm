@@ -2,13 +2,18 @@ use nqp;
 
 unit module JSON::Fast;
 
-sub str-escape(str $text) {
-    return $text.subst('\\', '\\\\',    :g)\
-                .subst("\n", '\\n',     :g)\
+sub str-escape(str $text is copy) {
+    $text .= subst('\\', '\\\\', :g);
+    for flat 0..8, 11, 12, 14..0x1f -> $ord {
+        my str $chr = chr($ord);
+        if $text.contains($chr) {
+            $text .= subst($chr, '\\u' ~ $ord.fmt("%04x"), :g);
+        }
+    }
+    return $text.subst("\n", '\\n',     :g)\
                 .subst("\r", '\\r',     :g)\
                 .subst("\t", '\\t',     :g)\
-                .subst('"',  '\\"',     :g)\
-                .subst("\0", '\\u0000', :g);
+                .subst('"',  '\\"',     :g);
 }
 
 sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
