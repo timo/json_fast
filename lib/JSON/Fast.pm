@@ -13,7 +13,6 @@ sub str-escape(str $text is copy) {
     return $text.subst("\n", '\\n',     :g)\
                 .subst("\r\n", '\\r\\n',:g)\
                 .subst("\r", '\\r',     :g)\
-                .subst("\r", '\\r',     :g)\
                 .subst("\t", '\\t',     :g)\
                 .subst('"',  '\\"',     :g);
 }
