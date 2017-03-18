@@ -88,11 +88,11 @@ my sub tear-off-combiners(str $text, int $pos) {
 }
 
 my sub parse-string(str $text, int $pos is rw) {
-    my $result = parse-string-pieces($text, $pos);
-    if $result ~~ Str {
-        return $result;
+    my \result = parse-string-pieces($text, $pos);
+    if result ~~ Str {
+        return result;
     } else {
-        return $result.join("");
+        return result.join("");
     }
 }
 
@@ -161,13 +161,8 @@ my sub parse-string-pieces(str $text, int $pos is rw) {
             } else {
                 $pos = $pos + 1;
                 my \subresult = parse-string-pieces($text, $pos);
-                if subresult ~~ Str {
-                    @pieces.push: subresult;
-                } else {
-                    @pieces.append: subresult;
-                }
+                @pieces.append: subresult;
                 return @pieces;
-                last;
             }
         } elsif $ord < 14 && ($ord == 10 || $ord == 13 || $ord == 9) {
             die "at $pos: the only whitespace allowed in json strings are spaces";
