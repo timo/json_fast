@@ -11,6 +11,8 @@ sub str-escape(str $text is copy) {
         }
     }
     return $text.subst("\n", '\\n',     :g)\
+                .subst("\r\n", '\\r\\n',:g)\
+                .subst("\r", '\\r',     :g)\
                 .subst("\r", '\\r',     :g)\
                 .subst("\t", '\\t',     :g)\
                 .subst('"',  '\\"',     :g);
@@ -126,6 +128,9 @@ my sub parse-string(str $text, int $pos is rw) {
                 @pieces.push: chr(0x0c);
             } elsif nqp::eqat($text, 'n', $pos) {
                 @pieces.push: "\n";
+            } elsif nqp::eqat($text, 'r\\n', $pos) {
+                @pieces.push: "\r\n";
+                $pos += 2;
             } elsif nqp::eqat($text, 'r', $pos) {
                 @pieces.push: "\r";
             } elsif nqp::eqat($text, 't', $pos) {

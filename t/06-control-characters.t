@@ -1,7 +1,7 @@
 use Test;
 use JSON::Fast;
 
-plan 0x20;
+plan 0x21;
 
 my @tests =
     "\x[0]"  => '"\\u0000"',
@@ -35,7 +35,8 @@ my @tests =
     "\x[1c]" => '"\\u001c"',
     "\x[1d]" => '"\\u001d"',
     "\x[1e]" => '"\\u001e"',
-    "\x[1f]" => '"\\u001f"';
+    "\x[1f]" => '"\\u001f"',
+    "\r\n" => '"\\r\\n"';
 
 for @tests {
     is to-json($_.key), $_.value, "control character $_.key.ord() => $_.value()";
