@@ -100,7 +100,7 @@ my sub parse-string-pieces(str $text, int $pos is rw) {
     # fast-path a search through the string for the first "special" character ...
     my int $startpos = $pos;
 
-    my $result = "";
+    my str $result;
 
     my int $ord;
 
@@ -160,13 +160,13 @@ my sub parse-string-pieces(str $text, int $pos is rw) {
                 last;
             } else {
                 $pos = $pos + 1;
-                my $subresult = parse-string-pieces($text, $pos);
-                if $subresult ~~ Str {
-                    @pieces.push: $subresult;
+                my \subresult = parse-string-pieces($text, $pos);
+                if subresult ~~ Str {
+                    @pieces.push: subresult;
                 } else {
-                    @pieces.append: |$subresult;
+                    @pieces.append: subresult;
                 }
-                $result = @pieces;
+                return @pieces;
                 last;
             }
         } elsif $ord < 14 && ($ord == 10 || $ord == 13 || $ord == 9) {
