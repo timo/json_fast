@@ -88,10 +88,19 @@ my sub tear-off-combiners(str $text, int $pos) {
 }
 
 my sub parse-string(str $text, int $pos is rw) {
+    my $result = parse-string-pieces($text, $pos);
+    if $result ~~ Str {
+        return $result;
+    } else {
+        return $result.join("");
+    }
+}
+
+my sub parse-string-pieces(str $text, int $pos is rw) {
     # fast-path a search through the string for the first "special" character ...
     my int $startpos = $pos;
 
-    my str $result;
+    my $result = "";
 
     my int $ord;
 
@@ -151,8 +160,13 @@ my sub parse-string(str $text, int $pos is rw) {
                 last;
             } else {
                 $pos = $pos + 1;
-                @pieces.push: parse-string($text, $pos);
-                $result = @pieces.join("");
+                my $subresult = parse-string-pieces($text, $pos);
+                if $subresult ~~ Str {
+                    @pieces.push: $subresult;
+                } else {
+                    @pieces.append: |$subresult;
+                }
+                $result = @pieces;
                 last;
             }
         } elsif $ord < 14 && ($ord == 10 || $ord == 13 || $ord == 9) {
