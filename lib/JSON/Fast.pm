@@ -87,7 +87,110 @@ my sub tear-off-combiners(str $text, int $pos) {
     return $parts[1..*].map({$^ord.chr()}).join()
 }
 
+my Mu $hexdigits := nqp::hash(
+    '97', 1, '98', 1, '99', 1, '100', 1, '101', 1, '102', 1,
+    '48', 1, '49', 1, '50', 1, '51', 1, '52', 1, '53', 1, '54', 1, '55', 1, '56', 1, '57', 1,
+    '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
+
+my Mu $escapees := nqp::hash(
+    '34', '"', '92', '\\', '98', 'b', '102', 'f', '110', 'n', '114', 'r', '116', 't');
+
 my sub parse-string(str $text, int $pos is rw) {
+    # first we gallop until the end of the string
+    my int $startpos = $pos;
+    my int $endpos;
+    my int $ord;
+    my int $has_hexcodes;
+    my int $has_treacherous;
+    my str $startcombiner = "";
+    my Mu $treacherous;
+
+    unless nqp::eqat($text, '"', $startpos - 1) {
+        $startcombiner = tear-off-combiners($text, $startpos - 1);
+    }
+
+    loop {
+        $ord = nqp::ordat($text, $pos);
+        $pos = $pos + 1;
+
+        if nqp::eqat($text, '"', $pos - 1) {
+            $endpos = $pos - 1;
+            last;
+        } elsif $ord == 92 {
+            if nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
+                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text, 'n', $pos) or nqp::eqat($text, 'r', $pos)
+                or nqp::eqat($text, 't', $pos) {
+                $pos = $pos + 1;
+            } elsif nqp::eqat($text, 'u', $pos) {
+                die "unexpected end of document; was looking for four hexdigits." if nqp::chars($text) - $pos < 4;
+                if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
+                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
+                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
+                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
+                    $pos = $pos + 4;
+                    $has_hexcodes++;
+                }
+            } elsif nqp::existskey($escapees, nqp::ordat($text, $pos)) {
+                # treacherous!
+                $has_treacherous++;
+                $treacherous := nqp::hash() unless $treacherous;
+                my int $treach_ord = nqp::ordat($text, $pos);
+                if nqp::existskey($treacherous, $treach_ord) {
+                    nqp::bindkey($treacherous, $treach_ord, 1)
+                } else {
+                    nqp::bindkey($treacherous, $treach_ord, nqp::atkey($treacherous, $treach_ord) + 1)
+                }
+            } else {
+                die "don't understand escape sequence '\\{ nqp::substr($text, $pos) }' at $pos";
+            }
+        }
+    }
+
+    $pos = $pos + 1;
+
+    my str $raw = nqp::substr($text, $startpos, $endpos - $startpos);
+    if not $has_treacherous {
+        $raw = $raw
+                .subst("\\n", "\n",     :g)
+                .subst("\\r\\n", "\r\n",:g)
+                .subst("\\r", "\r",     :g)
+                .subst("\\t", "\t",     :g)
+                .subst('\\"',  '"',     :g)
+                .subst('\\\\',  '\\',   :g);
+    } else {
+        $raw = $raw.subst(/ \\ (<-[uU]>) /,
+            -> $/ {
+                if nqp::ordat($0, 0) == 117 || nqp::ordat($0, 0) == 85 {
+                    $has_hexcodes++;
+                    "\\u" # to be replaced in the next step.
+                } elsif nqp::existskey($escapees, nqp::ordat($0, 0)) {
+                    my str $replacement = nqp::atkey($escapees, nqp::ordat($0, 0));
+                    $replacement ~ tear-off-combiners($0, 0);
+                } else {
+                    say "stumbled over unexpected escape code \\{ chr(nqp::ordat($0, 0)) } at { $startpos + $/.start }";
+                }
+            }, :g);
+    }
+    if $has_hexcodes {
+        $raw = $raw.subst(/ \\ <[uU]> (<[a..z 0..9 A..Z]> ** 3) (.) /,
+            -> $/ {
+                my $lastchar = nqp::chr(nqp::ord($1.Str));
+                my str $hexstr = $0 ~ $lastchar;
+
+                if $lastchar eq $1.Str {
+                    chr(:16($hexstr))
+                } else {
+                    chr(:16($hexstr)) ~ tear-off-combiners($1.Str, 0)
+                }
+            }, :x($has_hexcodes));
+    }
+
+    $pos = $pos - 1;
+
+    $raw;
+}
+
+my sub parse-string-old(str $text, int $pos is rw) {
     my \result = parse-string-pieces($text, $pos);
     if result ~~ Str {
         return result;
