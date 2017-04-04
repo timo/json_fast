@@ -166,14 +166,14 @@ my sub parse-string(str $text, int $pos is rw) {
     } else {
         $raw = $raw.subst(/ \\ (<-[uU]>) /,
             -> $/ {
-                if nqp::ordat($0, 0) == 117 || nqp::ordat($0, 0) == 85 {
+                if nqp::ordat($0.Str, 0) == 117 || nqp::ordat($0.Str, 0) == 85 {
                     $has_hexcodes++;
                     "\\u" # to be replaced in the next step.
-                } elsif nqp::existskey($escapees, nqp::ordat($0, 0)) {
+                } elsif nqp::existskey($escapees, nqp::ordat($0.Str, 0)) {
                     my str $replacement = nqp::atkey($escapees, nqp::ordat($0, 0));
-                    $replacement ~ tear-off-combiners($0, 0);
+                    $replacement ~ tear-off-combiners($0.Str, 0);
                 } else {
-                    say "stumbled over unexpected escape code \\{ chr(nqp::ordat($0, 0)) } at { $startpos + $/.start }";
+                    say "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.start }";
                 }
             }, :g);
     }
@@ -181,7 +181,7 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $raw.subst(/ \\ <[uU]> (<[a..z 0..9 A..Z]> ** 3) (.) /,
             -> $/ {
                 my $lastchar = nqp::chr(nqp::ord($1.Str));
-                my str $hexstr = $0 ~ $lastchar;
+                my str $hexstr = $0.Str ~ $lastchar;
 
                 if $lastchar eq $1.Str {
                     chr(:16($hexstr))
