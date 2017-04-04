@@ -99,6 +99,8 @@ my sub parse-string(str $text, int $pos is rw) {
     # first we gallop until the end of the string
     my int $startpos = $pos;
     my int $endpos;
+    my int $textlength = nqp::chars($text);
+
     my int $ord;
     my int $has_hexcodes;
     my int $has_treacherous;
@@ -113,6 +115,10 @@ my sub parse-string(str $text, int $pos is rw) {
     loop {
         $ord = nqp::ordat($text, $pos);
         $pos = $pos + 1;
+
+        if $pos > $textlength {
+            die "unexpected end of document in string";
+        }
 
         if nqp::eqat($text, '"', $pos - 1) {
             $endpos = $pos - 1;
@@ -129,7 +135,7 @@ my sub parse-string(str $text, int $pos is rw) {
                 }
                 $pos = $pos + 1;
             } elsif nqp::eqat($text, 'u', $pos) {
-                die "unexpected end of document; was looking for four hexdigits." if nqp::chars($text) - $pos < 4;
+                die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 4;
                 if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
                     and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
                     and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
