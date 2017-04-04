@@ -10,8 +10,8 @@ sub str-escape(str $text is copy) {
             $text .= subst($chr, '\\u' ~ $ord.fmt("%04x"), :g);
         }
     }
-    return $text.subst("\n", '\\n',     :g)\
-                .subst("\r\n", '\\r\\n',:g)\
+    return $text.subst("\r\n", '\\r\\n',:g)\
+                .subst("\n", '\\n',     :g)\
                 .subst("\r", '\\r',     :g)\
                 .subst("\t", '\\t',     :g)\
                 .subst('"',  '\\"',     :g);
