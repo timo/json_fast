@@ -136,9 +136,9 @@ my sub parse-string(str $text, int $pos is rw) {
                 $treacherous := nqp::hash() unless $treacherous;
                 my int $treach_ord = nqp::ordat($text, $pos);
                 if nqp::existskey($treacherous, $treach_ord) {
-                    nqp::bindkey($treacherous, $treach_ord, 1)
-                } else {
                     nqp::bindkey($treacherous, $treach_ord, nqp::atkey($treacherous, $treach_ord) + 1)
+                } else {
+                    nqp::bindkey($treacherous, $treach_ord, 1)
                 }
             } else {
                 die "don't understand escape sequence '\\{ nqp::substr($text, $pos, 1) }' at $pos";
