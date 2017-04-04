@@ -170,7 +170,7 @@ my sub parse-string(str $text, int $pos is rw) {
                     $has_hexcodes++;
                     "\\u" # to be replaced in the next step.
                 } elsif nqp::existskey($escapees, nqp::ordat($0.Str, 0)) {
-                    my str $replacement = nqp::atkey($escapees, nqp::ordat($0, 0));
+                    my str $replacement = nqp::atkey($escapees, nqp::ordat($0.Str, 0));
                     $replacement ~ tear-off-combiners($0.Str, 0);
                 } else {
                     say "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.start }";
