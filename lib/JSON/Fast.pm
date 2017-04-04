@@ -151,6 +151,9 @@ my sub parse-string(str $text, int $pos is rw) {
     $pos = $pos + 1;
 
     my str $raw = nqp::substr($text, $startpos, $endpos - $startpos);
+    if $startcombiner {
+        $raw = $startcombiner ~ $raw
+    }
     if not $has_treacherous {
         $raw = $raw
                 .subst("\\n", "\n",     :g)
