@@ -104,6 +104,7 @@ my sub parse-string(str $text, int $pos is rw) {
     my int $has_treacherous;
     my str $startcombiner = "";
     my Mu $treacherous;
+    my Mu $escape_counts := nqp::hash();
 
     unless nqp::eqat($text, '"', $startpos - 1) {
         $startcombiner = tear-off-combiners($text, $startpos - 1);
@@ -120,6 +121,12 @@ my sub parse-string(str $text, int $pos is rw) {
             if nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
                 or nqp::eqat($text, 'f', $pos) or nqp::eqat($text, 'n', $pos) or nqp::eqat($text, 'r', $pos)
                 or nqp::eqat($text, 't', $pos) or nqp::eqat($text, '/', $pos) {
+                my str $character = nqp::substr($text, $pos, 1);
+                if nqp::existskey($escape_counts, $character) {
+                    nqp::bindkey($escape_counts, $character, nqp::atkey($escape_counts, $character) + 1);
+                } else {
+                    nqp::bindkey($escape_counts, $character, 1);
+                }
                 $pos = $pos + 1;
             } elsif nqp::eqat($text, 'u', $pos) {
                 die "unexpected end of document; was looking for four hexdigits." if nqp::chars($text) - $pos < 4;
@@ -155,14 +162,12 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $startcombiner ~ $raw
     }
     if not $has_treacherous {
-        $raw = $raw
-                .subst("\\n", "\n",     :g)
-                .subst("\\r\\n", "\r\n",:g)
-                .subst("\\r", "\r",     :g)
-                .subst("\\t", "\t",     :g)
-                .subst('\\"', '"',      :g)
-                .subst('\\/',  '/',     :g)
-                .subst('\\\\', '\\',    :g);
+        $raw .= subst("\\n", "\n",   :x(nqp::atkey($escape_counts, "n"))) if nqp::existskey($escape_counts, "n");
+        $raw .= subst("\\r", "\r",   :x(nqp::atkey($escape_counts, "r"))) if nqp::existskey($escape_counts, "r");
+        $raw .= subst("\\t", "\t",   :x(nqp::atkey($escape_counts, "t"))) if nqp::existskey($escape_counts, "t");
+        $raw .= subst('\\"', '"',    :x(nqp::atkey($escape_counts, '"'))) if nqp::existskey($escape_counts, '"');
+        $raw .= subst('\\/', '/',    :x(nqp::atkey($escape_counts, '/'))) if nqp::existskey($escape_counts, '/');
+        $raw .= subst('\\\\', '\\',  :x(nqp::atkey($escape_counts, '\\'))) if nqp::existskey($escape_counts, '\\');
     } else {
         $raw = $raw.subst(/ \\ (<-[uU]>) /,
             -> $/ {
