@@ -93,7 +93,7 @@ my Mu $hexdigits := nqp::hash(
     '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
 
 my Mu $escapees := nqp::hash(
-    '34', '"', '92', '\\', '98', 'b', '102', 'f', '110', 'n', '114', 'r', '116', 't');
+    '34', '"', '47', '/', '92', '\\', '98', 'b', '102', 'f', '110', 'n', '114', 'r', '116', 't');
 
 my sub parse-string(str $text, int $pos is rw) {
     # first we gallop until the end of the string
@@ -119,7 +119,7 @@ my sub parse-string(str $text, int $pos is rw) {
         } elsif $ord == 92 {
             if nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
                 or nqp::eqat($text, 'f', $pos) or nqp::eqat($text, 'n', $pos) or nqp::eqat($text, 'r', $pos)
-                or nqp::eqat($text, 't', $pos) {
+                or nqp::eqat($text, 't', $pos) or nqp::eqat($text, '/', $pos) {
                 $pos = $pos + 1;
             } elsif nqp::eqat($text, 'u', $pos) {
                 die "unexpected end of document; was looking for four hexdigits." if nqp::chars($text) - $pos < 4;
@@ -155,8 +155,9 @@ my sub parse-string(str $text, int $pos is rw) {
                 .subst("\\r\\n", "\r\n",:g)
                 .subst("\\r", "\r",     :g)
                 .subst("\\t", "\t",     :g)
-                .subst('\\"',  '"',     :g)
-                .subst('\\\\',  '\\',   :g);
+                .subst('\\"', '"',      :g)
+                .subst('\\/',  '/',     :g)
+                .subst('\\\\', '\\',    :g);
     } else {
         $raw = $raw.subst(/ \\ (<-[uU]>) /,
             -> $/ {
