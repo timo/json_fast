@@ -142,6 +142,8 @@ my sub parse-string(str $text, int $pos is rw) {
                     and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
                     $pos = $pos + 4;
                     $has_hexcodes++;
+                } else {
+                    die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
                 }
             } elsif nqp::existskey($escapees, nqp::ordat($text, $pos)) {
                 # treacherous!
