@@ -135,7 +135,7 @@ my sub parse-string(str $text, int $pos is rw) {
                 }
                 $pos = $pos + 1;
             } elsif nqp::eqat($text, 'u', $pos) {
-                die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 4;
+                die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
                 if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
                     and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
                     and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
