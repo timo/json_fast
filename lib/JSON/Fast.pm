@@ -186,7 +186,7 @@ my sub parse-string(str $text, int $pos is rw) {
                     my str $replacement = nqp::atkey($escapees, nqp::ordat($0.Str, 0));
                     $replacement ~ tear-off-combiners($0.Str, 0);
                 } else {
-                    say "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.start }";
+                    die "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.from }";
                 }
             }, :g);
     }
