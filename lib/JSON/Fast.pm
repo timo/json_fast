@@ -170,13 +170,6 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $startcombiner ~ $raw
     }
     if not $has_treacherous {
-        #$raw .= subst("\\n", "\n",   :x(nqp::atkey($escape_counts, "n")))  if nqp::existskey($escape_counts, "n");
-        #$raw .= subst("\\r", "\r",   :x(nqp::atkey($escape_counts, "r")))  if nqp::existskey($escape_counts, "r");
-        #$raw .= subst("\\t", "\t",   :x(nqp::atkey($escape_counts, "t")))  if nqp::existskey($escape_counts, "t");
-        #$raw .= subst('\\"', '"',    :x(nqp::atkey($escape_counts, '"')))  if nqp::existskey($escape_counts, '"');
-        #$raw .= subst('\\/', '/',    :x(nqp::atkey($escape_counts, '/')))  if nqp::existskey($escape_counts, '/');
-        #$raw .= subst('\\\\', '\\',  :x(nqp::atkey($escape_counts, '\\'))) if nqp::existskey($escape_counts, '\\');
-
         my (@a, @b);
         if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
             @a.push("\\r\\n"); @b.push("\r\n");
