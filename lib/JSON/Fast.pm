@@ -178,6 +178,9 @@ my sub parse-string(str $text, int $pos is rw) {
         #$raw .= subst('\\\\', '\\',  :x(nqp::atkey($escape_counts, '\\'))) if nqp::existskey($escape_counts, '\\');
 
         my (@a, @b);
+        if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
+            @a.push("\\r\\n"); @b.push("\r\n");
+        }
         if nqp::existskey($escape_counts, "n") {
             @a.push("\\n"); @b.push("\n");
         }
