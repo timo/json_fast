@@ -31,7 +31,9 @@ my @s =
                                 keyfive  => False,
                                 keysix   => True,
                                 keyseven => 3.2,
-                            };
+                            },
+        'Backslashes 1'  => [ "\"Hi\".literal newlnie:\nbackslashed n:\\nbackslashed newlnie:\\\nbackslashes and quotes: \\\"" ],
+        ;
 
 plan +@s;
 
