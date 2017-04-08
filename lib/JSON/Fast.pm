@@ -220,12 +220,17 @@ my sub parse-string(str $text, int $pos is rw) {
             -> $/ {
                 my $lastchar = nqp::chr(nqp::ord($1.Str));
                 my str $hexstr = $0.Str ~ $lastchar;
+                my str $result;
 
-                if $lastchar eq $1.Str {
-                    chr(:16($hexstr))
-                } else {
-                    chr(:16($hexstr)) ~ tear-off-combiners($1.Str, 0)
+                try {
+                    if $lastchar eq $1.Str {
+                        $result = chr(:16($hexstr))
+                    } else {
+                        $result = chr(:16($hexstr)) ~ tear-off-combiners($1.Str, 0)
+                    }
                 }
+                die "Invalid hex string: $hexstr.perl()" without $result;
+                $result
             }, :x($has_hexcodes));
     }
 
