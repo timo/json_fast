@@ -170,12 +170,34 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $startcombiner ~ $raw
     }
     if not $has_treacherous {
-        $raw .= subst("\\n", "\n",   :x(nqp::atkey($escape_counts, "n"))) if nqp::existskey($escape_counts, "n");
-        $raw .= subst("\\r", "\r",   :x(nqp::atkey($escape_counts, "r"))) if nqp::existskey($escape_counts, "r");
-        $raw .= subst("\\t", "\t",   :x(nqp::atkey($escape_counts, "t"))) if nqp::existskey($escape_counts, "t");
-        $raw .= subst('\\"', '"',    :x(nqp::atkey($escape_counts, '"'))) if nqp::existskey($escape_counts, '"');
-        $raw .= subst('\\/', '/',    :x(nqp::atkey($escape_counts, '/'))) if nqp::existskey($escape_counts, '/');
-        $raw .= subst('\\\\', '\\',  :x(nqp::atkey($escape_counts, '\\'))) if nqp::existskey($escape_counts, '\\');
+        #$raw .= subst("\\n", "\n",   :x(nqp::atkey($escape_counts, "n")))  if nqp::existskey($escape_counts, "n");
+        #$raw .= subst("\\r", "\r",   :x(nqp::atkey($escape_counts, "r")))  if nqp::existskey($escape_counts, "r");
+        #$raw .= subst("\\t", "\t",   :x(nqp::atkey($escape_counts, "t")))  if nqp::existskey($escape_counts, "t");
+        #$raw .= subst('\\"', '"',    :x(nqp::atkey($escape_counts, '"')))  if nqp::existskey($escape_counts, '"');
+        #$raw .= subst('\\/', '/',    :x(nqp::atkey($escape_counts, '/')))  if nqp::existskey($escape_counts, '/');
+        #$raw .= subst('\\\\', '\\',  :x(nqp::atkey($escape_counts, '\\'))) if nqp::existskey($escape_counts, '\\');
+
+        my (@a, @b);
+        if nqp::existskey($escape_counts, "n") {
+            @a.push("\\n"); @b.push("\n");
+        }
+        if nqp::existskey($escape_counts, "r") {
+            @a.push("\\r"); @b.push("\r");
+        }
+        if nqp::existskey($escape_counts, "t") {
+            @a.push("\\t"); @b.push("\t");
+        }
+        if nqp::existskey($escape_counts, '"') {
+            @a.push('\\"'); @b.push('"');
+        }
+        if nqp::existskey($escape_counts, "/") {
+            @a.push("\\/"); @b.push("/");
+        }
+        if nqp::existskey($escape_counts, "\\") {
+            @a.push("\\\\"); @b.push("\\");
+        }
+
+        $raw .= trans(@a => @b) if @a;
     } else {
         $raw = $raw.subst(/ \\ (<-[uU]>) /,
             -> $/ {
