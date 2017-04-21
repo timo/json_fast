@@ -3,6 +3,7 @@
   "name" : "JSON::Fast",
   "description" : "A naive, fast json parser and serializer; drop-in replacement for JSON::Tiny",
   "version" : "0.9.1",
+  "license" : "Artistic-2.0",
   "test-depends" : [
     "Test"
   ],
