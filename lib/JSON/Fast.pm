@@ -159,7 +159,7 @@ my sub parse-string(str $text, int $pos is rw) {
                 die "don't understand escape sequence '\\{ nqp::substr($text, $pos, 1) }' at $pos";
             }
         } elsif $ord == 9 or $ord == 10 {
-            die "this kind of whitespace is not allowed in a string: { nqp::substr($text, $pos, 1).perl } at $pos";
+            die "this kind of whitespace is not allowed in a string: { nqp::substr($text, $pos - 1, 1).perl } at $pos";
         }
     }
 
