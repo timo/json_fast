@@ -19,6 +19,9 @@ sub str-escape(str $text is copy) {
 
 sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
+
+    return 'null' if not $obj.defined;
+
     return $obj.Str if $obj ~~ Int|Rat;
 
     if $obj ~~ Num {
@@ -33,7 +36,6 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
         }
     }
 
-    return 'null' if not $obj.defined;
     return "\"{str-escape($obj)}\"" if $obj ~~ Str;
 
     if $obj ~~ Seq {
