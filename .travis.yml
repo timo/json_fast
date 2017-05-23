@@ -4,5 +4,6 @@ perl6:
   - latest
 install:
     - rakudobrew build-zef
-    - zef install .
-
+    - zef install --depsonly .
+script:
+    - zef test .
