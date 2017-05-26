@@ -172,7 +172,8 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $startcombiner ~ $raw
     }
     if not $has_treacherous {
-        my (@a, @b);
+        my @a;
+        my @b;
         if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
             @a.push("\\r\\n"); @b.push("\r\n");
         }
