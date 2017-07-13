@@ -36,7 +36,7 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
         }
     }
 
-    return "\"{str-escape($obj)}\"" if $obj ~~ Str;
+    return '"'  ~ str-escape( $obj ) ~ '"' if $obj ~~ Str;
 
     if $obj ~~ Seq {
         $obj = $obj.cache
