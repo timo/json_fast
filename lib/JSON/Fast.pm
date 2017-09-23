@@ -17,7 +17,7 @@ sub str-escape(str $text is copy) {
                 .subst('"',  '\\"',     :g);
 }
 
-sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
+multi sub to-json($obj is copy, Bool :$pretty!, Int :$level = 0, Int :$spacing = 2) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
 
     return 'null' if not $obj.defined;
@@ -69,6 +69,52 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
     $out .=subst(/',' \s* $/, '');
     $lvl--;
     $spacer();
+    $out ~= $arr ?? ']' !! '}';
+    return $out;
+}
+
+multi sub to-json($obj is copy) is export {
+    return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
+
+    return 'null' if not $obj.defined;
+
+    return $obj.Str if $obj ~~ Int|Rat;
+
+    if $obj ~~ Num {
+        if $obj === NaN || $obj === -Inf || $obj === Inf {
+            if try $*JSON_NAN_INF_SUPPORT {
+                return $obj.Str;
+            } else {
+                return "null";
+            }
+        } else {
+            return $obj.Str;
+        }
+    }
+
+    return "\"{str-escape($obj)}\"" if $obj ~~ Str;
+
+    return „"$obj"“ if $obj ~~ Dateish;
+    return „"{$obj.DateTime.Str}"“ if $obj ~~ Instant;
+
+    if $obj ~~ Seq {
+        $obj = $obj.cache
+    }
+
+    my Bool $arr  = $obj ~~ Positional;
+    my str  $out ~= $arr ?? '[' !! '{';
+
+    if $arr {
+        for @($obj) -> $i {
+          $out ~= to-json($i) ~ ',';
+        }
+    }
+    else {
+        for $obj.keys -> $key {
+            $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}) ~ ',';
+        }
+    }
+    $out .=subst(/',' \s* $/, '');
     $out ~= $arr ?? ']' !! '}';
     return $out;
 }
