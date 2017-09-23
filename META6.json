@@ -25,10 +25,11 @@
   "provides": {
     "JSON::Fast": "lib/JSON/Fast.pm"
   },
-  "version": "0.9.2",
+  "version": "0.9.3",
   "authors": [
     "Timo Paulssen",
-    "Tony O'Dell"
+    "Tony O'Dell",
+    "Wenzel P. P. Peppmeyer"
   ],
   "description": "A naive, fast json parser and serializer; drop-in replacement for JSON::Tiny",
   "meta6": "0"
