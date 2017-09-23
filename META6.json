@@ -13,14 +13,14 @@
   ],
   "auth": null,
   "depends": [
-    "Test::META"
   ],
   "tags": [
     
   ],
   "license": "Artistic-2.0",
   "test-depends": [
-    "Test"
+    "Test",
+    "Test::META"
   ],
   "provides": {
     "JSON::Fast": "lib/JSON/Fast.pm"
