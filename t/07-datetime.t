@@ -6,13 +6,6 @@ use Test;
 
 plan 1;
 
-my @data = now.DateTime, DateTime, now, Date.today;
-dd @data;
-my $json = to-json @data;
-
-my @data-round-trip := from-json $json;
-dd @data-round-trip;
-
 use MONKEY-TYPING;
 augment class DateTime { multi method new(Any:U){ $?CLASS } }
 augment class Date { multi method new(Any:U){ $?CLASS } }
@@ -26,6 +19,11 @@ multi sub infix:<=~=>(Instant:D\l, Instant:D\r){ l.to-posix == r.to-posix }
 multi sub infix:<=~=>(Instant:U\l, Instant:U\r){ True }
 
 
+my @data = now.DateTime, DateTime, now, Date.today;
+my $json = to-json @data;
+
+my @data-round-trip := from-json $json;
+
 with @data-round-trip {
     .[0] = DateTime.new(.[0]);
     .[1] = DateTime.new(.[1]);
@@ -33,6 +31,5 @@ with @data-round-trip {
     .[3] = Date.new(.[3]);
 }
 
-dd @data-round-trip;
 ok all(@data-round-trip »=~=« @data), ‚Roundtrip for DateTime instant, DateTime, Date and Instant instant works‘;
 
