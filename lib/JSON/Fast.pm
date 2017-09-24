@@ -77,7 +77,7 @@ multi sub to-json($obj is copy, Bool :$pretty!, Int :$level = 0, Int :$spacing =
     return $out;
 }
 
-multi sub to-json($obj is copy) is export {
+multi sub to-json($obj) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
 
     return 'null' if not $obj.defined;
@@ -105,21 +105,21 @@ multi sub to-json($obj is copy) is export {
         $obj = $obj.cache
     }
 
-    my Bool $arr  = $obj ~~ Positional;
-    my str  $out ~= $arr ?? '[' !! '{';
-
-    if $arr {
-        for @($obj) -> $i {
-          $out ~= to-json($i) ~ ',';
+    my $out;
+    if $obj ~~ Positional {
+        $out = '[';
+        loop (my int $i=0,my int $max=$obj.elems-1; $i < $max; $i++) {
+            $out ~= to-json($obj.AT-POS($i)) ~ ','
         }
-    }
-    else {
+        $out ~= to-json($obj.AT-POS($i)) ~ ']';
+    } else {
+        $out = '{';
         for $obj.keys -> $key {
-            $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}) ~ ',';
+            $out ~= „"{str-escape $key}":{to-json $obj.AT-KEY($key)},“;
         }
+        $out .=chop;
+        $out ~= '}';
     }
-    $out .=subst(/',' \s* $/, '');
-    $out ~= $arr ?? ']' !! '}';
     return $out;
 }
 
