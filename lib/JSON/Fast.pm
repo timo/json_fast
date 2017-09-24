@@ -77,7 +77,7 @@ multi sub to-json($obj is copy, Bool :$pretty!, Int :$level = 0, Int :$spacing =
     return $out;
 }
 
-multi sub to-json($obj) is export {
+multi sub to-json($obj is copy) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
 
     return 'null' if not $obj.defined;
@@ -121,6 +121,59 @@ multi sub to-json($obj) is export {
         $out ~= '}';
     }
     return $out;
+}
+
+multi sub to-json-file(IO::Handle:D $fh, $_ is copy) is export {
+
+    when Bool { $fh.print: ‚true‘ }
+
+    when !.defined { $fh.print: ‚null‘ }
+
+    when Int|Rat { $fh.print: .Str }
+
+    when Num {
+        if $_ === NaN | -Inf | Inf {
+            if try $*JSON_NAN_INF_SUPPORT {
+                $fh.print: .Str
+            } else {
+                $fh.print: ‚null‘
+            }
+        } else {
+            $fh.print: .Str
+        }
+    }
+
+    when Str { $fh.print: „"{str-escape .Str}"“ }
+
+    when Dateish { $fh.print: „"$_"“ }
+    when Instant { $fh.print: „"{.DateTime.Str}"“ }
+
+    when Seq { .=cache }
+
+    when Positional {
+        $fh.print: '[';
+            loop (my int $i=0,my int $max = .elems - 1; $i < $max; $i++) {
+                to-json-file($fh, .AT-POS($i));
+                $fh.print: ','
+            }
+            to-json-file($fh, .AT-POS($i));
+            $fh.print: ']'
+    }
+
+    default {
+        $fh.print: '{';
+        my @keys = .keys;
+        my $key;
+        for @keys[0..^*-1] -> $key {
+            $fh.print: „"{str-escape $key}":“;
+            to-json-file($fh, .AT-KEY($key));
+            $fh.print: ‚,‘
+        }
+        $key = @keys.tail;
+        $fh.print: „"{str-escape $key}":“;
+        to-json-file($fh, .AT-KEY($key));
+        $fh.print: '}';
+    }
 }
 
 my sub nom-ws(str $text, int $pos is rw) {
