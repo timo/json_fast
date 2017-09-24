@@ -19,8 +19,7 @@
   ],
   "license": "Artistic-2.0",
   "test-depends": [
-    "Test",
-    "Test::META"
+    "Test"
   ],
   "provides": {
     "JSON::Fast": "lib/JSON/Fast.pm"
