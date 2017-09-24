@@ -2,23 +2,10 @@ use nqp;
 
 unit module JSON::Fast;
 
-# sub str-escape(str $text is copy) {
-#     $text .= subst('\\', '\\\\', :g);
-#     for flat 0..8, 11, 12, 14..0x1f -> $ord {
-#         my str $chr = chr($ord);
-#         if $text.contains($chr) {
-#             $text .= subst($chr, '\\u' ~ $ord.fmt("%04x"), :g);
-#         }
-#     }
-#     return $text.subst("\r\n", '\\r\\n',:g)\
-#                 .subst("\n", '\\n',     :g)\
-#                 .subst("\r", '\\r',     :g)\
-#                 .subst("\t", '\\t',     :g)\
-#                 .subst('"',  '\\"',     :g);
-# }
-
 sub str-escape($text) {
-    $text.subst("\x5c", '\u005c', :g).subst("\x0", '\u0000', :g).subst("\x1", '\u0001', :g).subst("\x2", '\u0002', :g).subst("\x3", '\u0003', :g).subst("\x4", '\u0004', :g).subst("\x5", '\u0005', :g).subst("\x6", '\u0006', :g).subst("\x7", '\u0007', :g).subst("\x8", '\u0008', :g).subst("\x9", '\u0009', :g).subst("\xA", '\u000a', :g).subst("\xB", '\u000b', :g).subst("\xC", '\u000c', :g).subst("\xD", '\u000d', :g).subst("\xE", '\u000e', :g).subst("\xF", '\u000f', :g).subst("\x10", '\u0010', :g).subst("\x11", '\u0011', :g).subst("\x12", '\u0012', :g).subst("\x13", '\u0013', :g).subst("\x14", '\u0014', :g).subst("\x15", '\u0015', :g).subst("\x16", '\u0016', :g).subst("\x17", '\u0017', :g).subst("\x18", '\u0018', :g).subst("\x19", '\u0019', :g).subst("\x1A", '\u001a', :g).subst("\x1B", '\u001b', :g).subst("\x1C", '\u001c', :g).subst("\x1D", '\u001d', :g).subst("\x1E", '\u001e', :g).subst("\x1F", '\u001f', :g).subst("\x22", '\u0022', :g)
+    return $text unless $text ~~ /<[\x[5C] \x[22] \x[00]..\x[1F]]>/;
+
+    $text.subst(/(<[\x[5C] \x[22] \x[00]..\x[1F]]>)/, {'\u' ~ $0.ord.fmt('%04x')}, :g);
 }
 
 multi sub to-json($obj is copy, Bool :$pretty!, Int :$level = 0, Int :$spacing = 2) is export {
