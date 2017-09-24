@@ -24,7 +24,7 @@
   "provides": {
     "JSON::Fast": "lib/JSON/Fast.pm"
   },
-  "version": "0.9.3",
+  "version": "0.9.4",
   "authors": [
     "Timo Paulssen",
     "Tony O'Dell",
