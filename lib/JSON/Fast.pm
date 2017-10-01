@@ -22,9 +22,21 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
 
     return 'null' if not $obj.defined;
 
-    return $obj.Str if $obj ~~ Int|Rat;
+    # Handle allomorphs like IntStr.new(0, '') properly.
+    return $obj.Int.Str if $obj ~~ Int;
+    return to-json($obj.Rat, :$pretty, :$level, :$spacing) if $obj ~~ RatStr;
+
+    if $obj ~~ Rat {
+        my $result = $obj.Str;
+        unless $obj.contains(".") {
+            return $result ~ ".0";
+        }
+        return $result;
+    }
 
     if $obj ~~ Num {
+        # Allomorph support for NumStr, too.
+        $obj = $obj.Num;
         if $obj === NaN || $obj === -Inf || $obj === Inf {
             if try $*JSON_NAN_INF_SUPPORT {
                 return $obj.Str;
@@ -32,7 +44,11 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
                 return "null";
             }
         } else {
-            return $obj.Str;
+            my $result = $obj.Str;
+            unless $result.contains("e") {
+                return $result ~ "e0";
+            }
+            return $result;
         }
     }
 

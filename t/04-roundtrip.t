@@ -16,6 +16,9 @@ my @s =
         'Array of Num'   => [ 1.3, 2.8, 32323423.4, 4.0 ],
         'Array of Str'   => [ <one two three gazooba> ],
         'Array of Undef' => [ Any, Any ],
+        'Int Allomorph'  => [ IntStr.new(0, '') ] => [ 0 ],
+        'Rat Allomorph'  => [ RatStr.new(0.0, '') ] => [0.0],
+        'Num Allomorph'  => [ NumStr.new(0e0, '') ] => [0e0],
         'Empty Hash'     => {},
         'Undef Hash Val' => { key => Any },
         'Hash of Int'    => { :one(1), :two(2), :three(3) },
@@ -38,9 +41,13 @@ my @s =
 plan +@s;
 
 for @s.kv -> $k, $v {
-    my $r = from-json( to-json( $v.value, :!pretty ) );
-    todo('known type mismatches') if $k == 9;
-    is-deeply $r, $v.value, $v.key;
+    my $source-data = $v.value ~~ Pair ?? $v.value.key !! $v.value;
+    my $r = from-json( to-json( $source-data, :!pretty ) );
+    if $v.value ~~ Pair {
+        is-deeply $r, $v.value.value, $v.key;
+    } else {
+        is-deeply $r, $v.value, $v.key;
+    }
 }
 
 # vim: ft=perl6
