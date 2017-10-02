@@ -1,3 +1,47 @@
+=begin pod
+=head1 JSON::Fast
+
+a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>'s from-json and to-json subs, but it offers a few extra features.
+
+Currently it seems to be about 4x faster and uses up about a quarter of the RAM JSON::Tiny would use.
+
+This module also includes a very fast to-json function that tony-o created in tony-o/perl6-json-faster.
+
+=head2 Exported subroutines
+
+=head3 to-json
+
+=for code
+    my $*JSON_NAN_INF_SUPPORT = 1; # allow NaN, Inf, and -Inf to be serialized.
+    say to-json [<my Perl data structure>];
+    say to-json [<my Perl data structure>], :!pretty;
+    say to-json [<my Perl data structure>], :spacing(4);
+
+Encode a Perl data structure into JSON. Takes one positional argument, which
+is a thing you want to encode into JSON. Takes these optional named arguments:
+
+=head4 pretty
+
+C<Bool>. Defaults to C<True>. Specifies whether the output should be "pretty",
+human-readable JSON.
+
+=head4 spacing
+
+C<Int>. Defaults to C<2>. Applies only when C<pretty> is C<True>.
+Controls how much spacing there is between each nested level of the output.
+
+=head3 from-json
+
+=for code
+    my $x = from-json '["foo", "bar", {"ber": "bor"}]';
+    say $x.perl;
+    # outputs: $["foo", "bar", {:ber("bor")}]
+
+Takes one positional argument that is coerced into a C<Str> type and represents
+a JSON text to decode. Returns a Perl datastructure representing that JSON.
+
+=end pod
+
 use nqp;
 
 unit module JSON::Fast;
