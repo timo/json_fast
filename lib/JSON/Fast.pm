@@ -127,8 +127,6 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
             @keys = @keys.sort;
         }
 
-        say @keys;
-
         for @keys -> $key {
             $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
             $spacer();
