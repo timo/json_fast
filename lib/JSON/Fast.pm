@@ -61,14 +61,14 @@ sub str-escape(str $text is copy) {
                 .subst('"',  '\\"',     :g);
 }
 
-sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2) is export {
+sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2, Bool :$sorted-keys = False) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
 
     return 'null' if not $obj.defined;
 
     # Handle allomorphs like IntStr.new(0, '') properly.
     return $obj.Int.Str if $obj ~~ Int;
-    return to-json($obj.Rat, :$pretty, :$level, :$spacing) if $obj ~~ RatStr;
+    return to-json($obj.Rat, :$pretty, :$level, :$spacing, :$sorted-keys) if $obj ~~ RatStr;
 
     if $obj ~~ Rat {
         my $result = $obj.Str;
@@ -116,13 +116,21 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
     $spacer();
     if $arr {
         for @($obj) -> $i {
-          $out ~= to-json($i, :level($level+1), :$spacing, :$pretty) ~ ',';
+          $out ~= to-json($i, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
           $spacer();
         }
     }
     else {
-        for $obj.keys -> $key {
-            $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}, :level($level+1), :$spacing, :$pretty) ~ ',';
+        my @keys = $obj.keys;
+
+        if ($sorted-keys) {
+            @keys = @keys.sort;
+        }
+
+        say @keys;
+
+        for @keys -> $key {
+            $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
             $spacer();
         }
     }
