@@ -30,6 +30,11 @@ human-readable JSON.
 C<Int>. Defaults to C<2>. Applies only when C<pretty> is C<True>.
 Controls how much spacing there is between each nested level of the output.
 
+=head4 sorted-keys
+
+C<Bool>, defaults to C<False>. Specifies whether keys from objects should
+be sorted before serializing them to a string or if C<$obj.keys> is good enough.
+
 =head3 from-json
 
 =for code
