@@ -29,6 +29,10 @@ Encode a Perl data structure into JSON. Takes one positional argument, which is 
 
 `Int`. Defaults to `2`. Applies only when `pretty` is `True`. Controls how much spacing there is between each nested level of the output.
 
+#### sorted-keys
+
+`Bool`, defaults to `False`. Specifies whether keys from objects should be sorted before serializing them to a string or if `$obj.keys` is good enough.
+
 ### from-json
 
         my $x = from-json '["foo", "bar", {"ber": "bor"}]';
