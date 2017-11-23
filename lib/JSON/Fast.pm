@@ -101,7 +101,7 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
         }
     }
 
-    return "\"{str-escape($obj)}\"" if $obj ~~ Str;
+    return "\"" ~ str-escape($obj) ~ "\"" if $obj ~~ Str;
 
     return „"$obj"“ if $obj ~~ Dateish;
     return „"{$obj.DateTime.Str}"“ if $obj ~~ Instant;
@@ -133,7 +133,11 @@ sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing =
         }
 
         for @keys -> $key {
-            $out ~= "\"{$key ~~ Str ?? str-escape($key) !! $key}\": " ~ to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
+            $out ~= "\"" ~
+                    ($key ~~ Str ?? str-escape($key) !! $key) ~
+                    "\": " ~
+                    to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~
+                    ',';
             $spacer();
         }
     }
