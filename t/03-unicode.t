@@ -9,13 +9,15 @@ my @t =
     '{ "a" : "b\u00E5" }' => { 'a' => 'bå' },
     '[ "\u2685" ]' => [ '⚅' ],
     '[ "̅hello" ]' => [ "\x[305]hello" ],
-    '{ "̅hello": "goodbye" }' => { "\x[305]hello" => "goodbye" };
+    '{ "̅hello": "goodbye" }' => { "\x[305]hello" => "goodbye" },
+    '[ "\ud83c\udded\ud83c\uddf7" ]' => [ "🇭🇷" ];
 
 my @out =
     "\{\"a\": \"bå\"}",
     '["⚅"]',
     '["̅hello"]',
-    '{"̅hello": "goodbye"}';
+    '{"̅hello": "goodbye"}',
+    '["🇭🇷"]';
 
 plan (+@t * 2 + 2);
 my $i = 0;

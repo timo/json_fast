@@ -211,16 +211,24 @@ my sub parse-string(str $text, int $pos is rw) {
                 }
                 $pos = $pos + 1;
             } elsif nqp::eqat($text, 'u', $pos) {
-                die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
-                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
-                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
-                    and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
-                    $pos = $pos + 4;
-                    $has_hexcodes++;
-                } else {
-                    die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
+                loop {
+                    die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
+                    if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
+                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
+                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
+                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
+                        $pos = $pos + 4;
+                    } else {
+                        die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
+                    }
+                    $pos++;
+                    if nqp::eqat($text, '\u', $pos) {
+                        $pos++;
+                    } else {
+                        last
+                    }
                 }
+                $has_hexcodes++;
             } elsif nqp::existskey($escapees, nqp::ordat($text, $pos)) {
                 # treacherous!
                 $has_treacherous++;
@@ -286,21 +294,21 @@ my sub parse-string(str $text, int $pos is rw) {
             }, :g);
     }
     if $has_hexcodes {
-        $raw = $raw.subst(/ \\ <[uU]> (<[a..z 0..9 A..Z]> ** 3) (.) /,
+        $raw = $raw.subst(/ [\\ <[uU]> (<[a..z 0..9 A..Z]> ** 3)]+ %(<[a..z 0..9 A..Z]>) (:m <[a..z 0..9 A..Z]>) /,
             -> $/ {
-                my $lastchar = nqp::chr(nqp::ord($1.Str));
-                my str $hexstr = $0.Str ~ $lastchar;
-                my str $result;
-
-                try {
-                    if $lastchar eq $1.Str {
-                        $result = chr(:16($hexstr))
-                    } else {
-                        $result = chr(:16($hexstr)) ~ tear-off-combiners($1.Str, 0)
-                    }
+                my str @caps = $/.caps>>.value>>.Str;
+                my str $endpiece = "";
+                if my $lastchar = nqp::chr(nqp::ord(@caps.tail)) ne @caps.tail {
+                    $endpiece = tear-off-combiners(@caps.tail, 0);
+                    @caps.pop;
+                    @caps.push($lastchar);
                 }
-                die "Invalid hex string: $hexstr.perl()" without $result;
-                $result
+                my int @hexes;
+                for @caps -> $first, $second {
+                    @hexes.push(:16($first ~ $second));
+                }
+
+                utf16.new(@hexes).decode ~ $endpiece;
             }, :x($has_hexcodes));
     }
 
