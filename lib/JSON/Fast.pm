@@ -243,6 +243,7 @@ my sub parse-string(str $text, int $pos is rw) {
                 } else {
                     nqp::bindkey($treacherous, $treach_ord, 1)
                 }
+                $pos++;
             } else {
                 die "don't understand escape sequence '\\{ nqp::substr($text, $pos, 1) }' at $pos";
             }
