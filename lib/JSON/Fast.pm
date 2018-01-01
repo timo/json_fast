@@ -51,7 +51,20 @@ use nqp;
 
 unit module JSON::Fast;
 
+multi sub to-surrogate-pair(Int $ord) {
+    my int $base = $ord - 0x10000;
+    my $top = $base +& 0b111111111110000000000 +> 10;
+    my $bottom = $base +&         0b1111111111;
+    "\\u" ~ (0xD800 + $top).base(16) ~ "\\u" ~ (0xDC00 + $bottom).base(16);
+}
+
+multi sub to-surrogate-pair(Str $input) {
+    to-surrogate-pair(nqp::ordat($input, 0));
+}
+
 sub str-escape(str $text is copy) {
+    return $text unless $text ~~ /:m <[\x[5C] \x[22] \x[00]..\x[1F] \x[10000]..\x[10FFFF]]>/;
+
     $text .= subst(/ :m <[\\ "]> /,
         -> $/ {
             my str $str = $/.Str;
@@ -64,8 +77,15 @@ sub str-escape(str $text is copy) {
             } else {
                 "\\\"" ~ tear-off-combiners($str, 0)
             }
-        },
-        :g);
+        }, :g);
+    $text .= subst(/ <[\x[10000]..\x[10FFFF]]> /,
+        -> $/ {
+            to-surrogate-pair($/.Str);
+        }, :g);
+    $text .= subst(/ :m <[\x[10000]..\x[10FFFF]]> /,
+        -> $/ {
+            to-surrogate-pair($/.Str) ~ tear-off-combiners($/.Str, 0);
+        }, :g);
     for flat 0..8, 11, 12, 14..0x1f -> $ord {
         my str $chr = chr($ord);
         if $text.contains($chr) {
@@ -176,8 +196,14 @@ my sub nom-ws(str $text, int $pos is rw) {
 
 my sub tear-off-combiners(str $text, int $pos) {
     my str $combinerstuff = nqp::substr($text, $pos, 1);
-    my Uni $parts = $combinerstuff.NFD;
-    return $parts[1..*].map({$^ord.chr()}).join()
+    my @parts = $combinerstuff.NFD.list;
+    return @parts.skip(1).map({
+            if $^ord > 0x10000 {
+                to-surrogate-pair($ord);
+            } else {
+                $ord.chr()
+            }
+        }).join()
 }
 
 my Mu $hexdigits := nqp::hash(
@@ -296,8 +322,8 @@ my sub parse-string(str $text, int $pos is rw) {
             @a.push("\\\\"); @b.push("\\");
         }
         $raw .= trans(@a => @b) if @a;
-    } else {
-        $raw = $raw.subst(/ \\ (<-[uU\\]>) || <!after \\> [\\\\]* <( [\\ (<[uU]>) (<[a..f 0..9 A..F]> ** 3)]+ %(<[a..f 0..9 A..F]>) (:m <[a..f 0..9 A..F]>) /,
+    } elsif $has_hexcodes or nqp::elems($escape_counts) {
+        $raw = $raw.subst(/ \\ (<-[uU]>) || [\\ (<[uU]>) (<[a..f 0..9 A..F]> ** 3)]+ %(<[a..f 0..9 A..F]>) (:m <[a..f 0..9 A..F]>) /,
             -> $/ {
                 if $0.elems > 1 || $0.Str eq "u" || $0.Str eq "U" {
                     my str @caps = $/.caps>>.value>>.Str;
@@ -314,8 +340,7 @@ my sub parse-string(str $text, int $pos is rw) {
                     }
 
                     CATCH {
-                        .note;
-                        die "Couldn't decode hexadecimal unicode escape { $result.Str } ({ $result.caps>>.value>>.Str }) at { $startpos + $result.from }";
+                        die "Couldn't decode hexadecimal unicode escape { $result.Str } at { $startpos + $result.from }";
                     }
 
                     utf16.new(@hexes).decode ~ $endpiece;

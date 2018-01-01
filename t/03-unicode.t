@@ -17,9 +17,9 @@ my @out =
     '["⚅"]',
     '["̅hello"]',
     '{"̅hello": "goodbye"}',
-    '["🇭🇷"]';
+    '["\uD83C\uDDED\uD83C\uDDF7"]';
 
-plan (+@t * 2 + 2);
+plan (+@t * 2 + 2 + 2);
 my $i = 0;
 for @t -> $p {
     my $json = from-json($p.key);
@@ -33,3 +33,8 @@ lives-ok {
 }, "parse a mean zalgo string";
 
 is $zalgostring.&from-json.&to-json, $zalgostring, "zalgostring roundtrips";
+
+given "\c[QUOTATION MARK] \c[REVERSE SOLIDUS, REVERSE SOLIDUS]u0004 \c[REVERSE SOLIDUS]u00037 \c[REVERSE SOLIDUS, REVERSE SOLIDUS, COMBINING TILDE] \c[QUOTATION MARK]" {
+    is .&from-json, " \c[REVERSE SOLIDUS]u0004 \x[3]7 \c[REVERSE SOLIDUS, COMBINING TILDE] ";
+    is .&from-json.&to-json, .self;
+}
