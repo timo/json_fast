@@ -99,7 +99,7 @@ sub str-escape(str $text is copy) {
     $text;
 }
 
-sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2, Bool :$sorted-keys = False) is export {
+our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2, Bool :$sorted-keys = False) is export {
     return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
 
     return 'null' if not $obj.defined;
@@ -521,7 +521,7 @@ my sub parse-thing(str $text, int $pos is rw) {
     }
 }
 
-sub from-json(Str() $text) is export {
+our sub from-json(Str() $text) is export {
     my str $ntext = $text;
     my int $length = $text.chars;
 
