@@ -316,7 +316,7 @@ my sub parse-string(str $text, int $pos is rw) {
             @a.push('\\"'); @b.push('"');
         }
         if nqp::existskey($escape_counts, "/") {
-            @a.push("/"), @b.push("\\/");
+            @a.push("\\/"), @b.push("/");
         }
         if nqp::existskey($escape_counts, "\\") {
             @a.push("\\\\"); @b.push("\\");
