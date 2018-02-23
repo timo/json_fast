@@ -1,7 +1,7 @@
 use Test;
 use JSON::Fast;
 
-plan 0x21;
+plan 0x21 * 2 + 2;
 
 my @tests =
     "\x[0]"  => '"\\u0000"',
@@ -39,5 +39,9 @@ my @tests =
     "\r\n" => '"\\r\\n"';
 
 for @tests {
-    is to-json($_.key), $_.value, "control character $_.key.ord() => $_.value()";
+    is (my $result = to-json($_.key)), $_.value, "control character $_.key.ord() => $_.value()";
+    is from-json($result), $_.key, "control character goes backwards, too";
 }
+
+is from-json('"\u1234\r"'), "\x[1234]\r", "simple control character escape plus a unicode sequence";
+is from-json('"\r\u1234"'), "\r\x[1234]", "simple control character escape plus a unicode sequence";

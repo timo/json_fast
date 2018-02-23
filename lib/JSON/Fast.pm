@@ -212,7 +212,7 @@ my Mu $hexdigits := nqp::hash(
     '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
 
 my Mu $escapees := nqp::hash(
-    '34', '"', '47', '/', '92', '\\', '98', 'b', '102', 'f', '110', 'n', '114', 'r', '116', 't');
+    "34", '"', "47", "/", "92", "\\", "98", "\b", "102", "\f", "110", "\n", "114", "\r", "116", "\t");
 
 my sub parse-string(str $text, int $pos is rw) {
     # first we gallop until the end of the string
@@ -297,7 +297,7 @@ my sub parse-string(str $text, int $pos is rw) {
     if $startcombiner {
         $raw = $startcombiner ~ $raw
     }
-    if not $has_treacherous and not $has_hexcodes {
+    if not $has_treacherous and not $has_hexcodes and $escape_counts {
         my @a;
         my @b;
         if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
