@@ -36,6 +36,7 @@ my @s =
                                 keyseven => 3.2,
                             },
         'Backslashes 1'  => [ "\"Hi\".literal newlnie:\nbackslashed n:\\nbackslashed newlnie:\\\nbackslashes and quotes: \\\"" ],
+        'URLs'           => [ 'http:\/\/www.github.com\/perl6\/nqp\/' ],
         ;
 
 plan +@s;
