@@ -5,7 +5,7 @@ plan 3;
 
 sub assert-sorted($obj, @keys = $obj.keys, :$message) {
     my $result = to-json($obj, :sorted-keys);
-    is .List, .sort.List, $message given $result.comb(/@keys/);
+    is $_, .sort.List, $message given $result.comb(/@keys/).List;
 }
 
 assert-sorted
