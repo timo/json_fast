@@ -145,6 +145,9 @@ our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spaci
 
     my int  $lvl  = $level;
     my Bool $arr  = $obj ~~ Positional;
+    my Bool $hash = $obj ~~ Associative;
+    return "\"" ~ str-escape($obj.Str) ~ "\"" unless $arr || $hash;
+
     my str  $out ~= $arr ?? '[' !! '{';
     my $spacer   := sub {
         $out ~= "\n" ~ (' ' x $lvl*$spacing) if $pretty;
