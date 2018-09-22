@@ -298,8 +298,8 @@ my sub parse-string(str $text, int $pos is rw) {
         $raw = $startcombiner ~ $raw
     }
     if not $has_treacherous and not $has_hexcodes and $escape_counts {
-        my @a;
-        my @b;
+        my str @a;
+        my str @b;
         if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
             @a.push("\\r\\n"); @b.push("\r\n");
         }
