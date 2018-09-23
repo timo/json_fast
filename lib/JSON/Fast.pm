@@ -208,8 +208,19 @@ my Mu $hexdigits := nqp::list_i;
 nqp::bindpos_i($hexdigits,$_,1)
   for (|("a".."f"),|("A".."F"),|("0".."9")).map: *.ord;
 
-my Mu $escapees := nqp::hash(
-    "34", '"', "47", "/", "92", "\\", "98", "\b", "102", "\f", "110", "\n", "114", "\r", "116", "\t");
+my Mu $escapees := nqp::list_s;
+for
+   '"', '"',
+   "/", "/",
+  "\\", "\\",
+   "b", "\b",
+   "f", "\f",
+   "n", "\n",
+   "r", "\r",
+   "t", "\t"
+-> str $char, str $escapee {
+    nqp::bindpos_s($escapees,nqp::ord($char),$escapee)
+}
 
 my sub parse-string(str $text, int $pos is rw) {
     # first we gallop until the end of the string
@@ -269,7 +280,7 @@ my sub parse-string(str $text, int $pos is rw) {
                     }
                 }
                 $has_hexcodes++;
-            } elsif nqp::existskey($escapees, nqp::ordat($text, $pos)) {
+            } elsif nqp::atpos_s($escapees, nqp::ordat($text, $pos)) {
                 # treacherous!
                 $has_treacherous++;
                 $treacherous := nqp::hash() unless $treacherous;
@@ -342,8 +353,8 @@ my sub parse-string(str $text, int $pos is rw) {
 
                     utf16.new(@hexes).decode ~ $endpiece;
                 } else {
-                    if nqp::existskey($escapees, nqp::ordat($0.Str, 0)) {
-                        my str $replacement = nqp::atkey($escapees, nqp::ordat($0.Str, 0));
+                    if nqp::atpos_s($escapees, nqp::ordat($0.Str, 0)) {
+                        my str $replacement = nqp::atpos_s($escapees, nqp::ordat($0.Str, 0));
                         $replacement ~ tear-off-combiners($0.Str, 0);
                     } else {
                         die "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.from }";
