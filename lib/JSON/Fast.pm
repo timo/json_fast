@@ -486,7 +486,7 @@ my sub parse-thing(str $text, int $pos is rw) {
 
     $pos = $pos + 1;
 
-    if ord($initial) == 34 { # "
+    if nqp::ord($initial) == 34 { # "
         parse-string($text, $pos);
     } elsif $initial eq '[' {
         parse-array($text, $pos);
