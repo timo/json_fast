@@ -204,10 +204,9 @@ my sub tear-off-combiners(str $text, int $pos) {
         }).join()
 }
 
-my Mu $hexdigits := nqp::hash(
-    '97', 1, '98', 1, '99', 1, '100', 1, '101', 1, '102', 1,
-    '48', 1, '49', 1, '50', 1, '51', 1, '52', 1, '53', 1, '54', 1, '55', 1, '56', 1, '57', 1,
-    '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
+my Mu $hexdigits := nqp::list_i;
+nqp::bindpos_i($hexdigits,$_,1)
+  for (|("a".."f"),|("A".."F"),|("0".."9")).map: *.ord;
 
 my Mu $escapees := nqp::hash(
     "34", '"', "47", "/", "92", "\\", "98", "\b", "102", "\f", "110", "\n", "114", "\r", "116", "\t");
@@ -254,10 +253,10 @@ my sub parse-string(str $text, int $pos is rw) {
             } elsif nqp::eqat($text, 'u', $pos) {
                 loop {
                     die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                    if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
+                      if nqp::atpos_i($hexdigits, nqp::ordat($text, $pos + 1))
+                     and nqp::atpos_i($hexdigits, nqp::ordat($text, $pos + 2))
+                     and nqp::atpos_i($hexdigits, nqp::ordat($text, $pos + 3))
+                     and nqp::atpos_i($hexdigits, nqp::ordat($text, $pos + 4)) {
                         $pos = $pos + 4;
                     } else {
                         die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
