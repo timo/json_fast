@@ -181,17 +181,15 @@ our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spaci
     return $out;
 }
 
-my sub nom-ws(str $text, int $pos is rw) {
-    my int $wsord;
-    nqp::handle(
-        nqp::while(1,
-            nqp::stmts(
-                ($wsord = nqp::ordat($text, $pos)),
-                (last unless $wsord == 32 || $wsord == 10 || $wsord == 13 || $wsord == 9),
-                ($pos = $pos + 1)
-            )),
-            'CATCH',
-            (die "reached end of string when looking for something"));
+my $ws := nqp::list_i;
+nqp::bindpos_i($ws,$_ + 1,1) for 9,10,13,32;  # allow for -1 as value
+my sub nom-ws(str $text, int $pos is rw --> Nil) {
+    nqp::while(
+      nqp::atpos_i($ws,nqp::ordat($text,$pos) + 1),
+      $pos = $pos + 1
+    );
+    die "reached end of string when looking for something"
+      if $pos == nqp::chars($text);
 }
 
 my sub tear-off-combiners(str $text, int $pos) {
