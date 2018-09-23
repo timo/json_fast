@@ -3,7 +3,8 @@
   "authors" : [
     "Timo Paulssen",
     "Tony O'Dell",
-    "Wenzel P. P. Peppmeyer"
+    "Wenzel P. P. Peppmeyer",
+    "Elizabeth Mattijsen"
   ],
   "build-depends" : [ ],
   "depends" : [ ],
