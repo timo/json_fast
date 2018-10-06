@@ -241,9 +241,9 @@ my sub parse-string(str $text, int $pos is rw) {
             $endpos = $pos - 1;
             last;
         } elsif $ord == 92 {
-            if nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
-                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text, 'n', $pos) or nqp::eqat($text, 'r', $pos)
-                or nqp::eqat($text, 't', $pos) or nqp::eqat($text, '/', $pos) {
+            if     nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
+                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text,  'n', $pos) or nqp::eqat($text, 'r', $pos)
+                or nqp::eqat($text, 't', $pos) or nqp::eqat($text,  '/', $pos) {
                 my str $character = nqp::substr($text, $pos, 1);
                 if nqp::existskey($escape_counts, $character) {
                     nqp::bindkey($escape_counts, $character, nqp::atkey($escape_counts, $character) + 1);
@@ -254,7 +254,7 @@ my sub parse-string(str $text, int $pos is rw) {
             } elsif nqp::eqat($text, 'u', $pos) {
                 loop {
                     die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                    if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
+                    if      nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
@@ -419,7 +419,7 @@ my sub parse-obj(str $text, int $pos is rw) {
 
             #my str $partitioner = nqp::substr($text, $pos, 1);
 
-            if nqp::eqat($text, ':', $pos)      and !($key.DEFINITE or $value.DEFINITE) {
+            if      nqp::eqat($text, ':', $pos) and   !($key.DEFINITE or      $value.DEFINITE) {
                 $key = $thing;
             } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
