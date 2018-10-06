@@ -14,7 +14,7 @@
   "name" : "JSON::Fast",
   "perl" : "6.*",
   "provides" : {
-    "JSON::Fast" : "lib/JSON/Fast.pm"
+    "JSON::Fast" : "lib/JSON/Fast.pm6"
   },
   "resources" : [ ],
   "source-url" : "git://github.com/timo/json_fast.git",
