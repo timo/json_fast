@@ -53,8 +53,8 @@ unit module JSON::Fast;
 
 multi sub to-surrogate-pair(Int $ord) {
     my int $base = $ord - 0x10000;
-    my $top = $base +& 0b111111111110000000000 +> 10;
-    my $bottom = $base +&         0b1111111111;
+    my $top = $base +& 0b1_1111_1111_1100_0000_0000 +> 10;
+    my $bottom = $base +&            0b11_1111_1111;
     "\\u" ~ (0xD800 + $top).base(16) ~ "\\u" ~ (0xDC00 + $bottom).base(16);
 }
 
