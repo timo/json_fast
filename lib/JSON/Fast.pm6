@@ -1,7 +1,7 @@
 =begin pod
 =head1 JSON::Fast
 
-a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>'s from-json and to-json subs, but it offers a few extra features.
+a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>’s from-json and to-json subs, but it offers a few extra features.
 
 Currently it seems to be about 4x faster and uses up about a quarter of the RAM JSON::Tiny would use.
 
@@ -136,8 +136,8 @@ our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spaci
 
     return "\"" ~ str-escape($obj) ~ "\"" if $obj ~~ Str;
 
-    return „"$obj"“ if $obj ~~ Dateish;
-    return „"{$obj.DateTime.Str}"“ if $obj ~~ Instant;
+    return “"$obj"” if $obj ~~ Dateish;
+    return “"{$obj.DateTime.Str}"” if $obj ~~ Instant;
 
     if $obj ~~ Seq {
         $obj = $obj.cache
