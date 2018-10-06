@@ -1,7 +1,7 @@
 =begin pod
 =head1 JSON::Fast
 
-a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>'s from-json and to-json subs, but it offers a few extra features.
+a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>’s from-json and to-json subs, but it offers a few extra features.
 
 Currently it seems to be about 4x faster and uses up about a quarter of the RAM JSON::Tiny would use.
 
@@ -53,8 +53,8 @@ unit module JSON::Fast;
 
 multi sub to-surrogate-pair(Int $ord) {
     my int $base = $ord - 0x10000;
-    my $top = $base +& 0b111111111110000000000 +> 10;
-    my $bottom = $base +&         0b1111111111;
+    my $top = $base +& 0b1_1111_1111_1100_0000_0000 +> 10;
+    my $bottom = $base +&            0b11_1111_1111;
     "\\u" ~ (0xD800 + $top).base(16) ~ "\\u" ~ (0xDC00 + $bottom).base(16);
 }
 
@@ -136,8 +136,8 @@ our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spaci
 
     return "\"" ~ str-escape($obj) ~ "\"" if $obj ~~ Str;
 
-    return „"$obj"“ if $obj ~~ Dateish;
-    return „"{$obj.DateTime.Str}"“ if $obj ~~ Instant;
+    return “"$obj"” if $obj ~~ Dateish;
+    return “"{$obj.DateTime.Str}"” if $obj ~~ Instant;
 
     if $obj ~~ Seq {
         $obj = $obj.cache
@@ -241,9 +241,9 @@ my sub parse-string(str $text, int $pos is rw) {
             $endpos = $pos - 1;
             last;
         } elsif $ord == 92 {
-            if nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
-                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text, 'n', $pos) or nqp::eqat($text, 'r', $pos)
-                or nqp::eqat($text, 't', $pos) or nqp::eqat($text, '/', $pos) {
+            if     nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
+                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text,  'n', $pos) or nqp::eqat($text, 'r', $pos)
+                or nqp::eqat($text, 't', $pos) or nqp::eqat($text,  '/', $pos) {
                 my str $character = nqp::substr($text, $pos, 1);
                 if nqp::existskey($escape_counts, $character) {
                     nqp::bindkey($escape_counts, $character, nqp::atkey($escape_counts, $character) + 1);
@@ -254,7 +254,7 @@ my sub parse-string(str $text, int $pos is rw) {
             } elsif nqp::eqat($text, 'u', $pos) {
                 loop {
                     die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                    if nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
+                    if      nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
                         and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
@@ -419,7 +419,7 @@ my sub parse-obj(str $text, int $pos is rw) {
 
             #my str $partitioner = nqp::substr($text, $pos, 1);
 
-            if nqp::eqat($text, ':', $pos)      and !($key.DEFINITE or $value.DEFINITE) {
+            if      nqp::eqat($text, ':', $pos) and   !($key.DEFINITE or      $value.DEFINITE) {
                 $key = $thing;
             } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
