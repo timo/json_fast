@@ -146,37 +146,40 @@ our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spaci
     my int  $lvl  = $level;
     my Bool $arr  = $obj ~~ Positional;
     my str  $out ~= $arr ?? '[' !! '{';
+    
     my $spacer   := sub {
         $out ~= "\n" ~ (' ' x $lvl*$spacing) if $pretty;
     };
 
-    $lvl++;
-    $spacer();
-    if $arr {
-        for @($obj) -> $i {
-          $out ~= to-json($i, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
-          $spacer();
+    if $obj.elems > 0 {
+        $lvl++;
+        $spacer();
+        if $arr {
+            for @($obj) -> $i {
+              $out ~= to-json($i, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
+              $spacer();
+            }
         }
-    }
-    else {
-        my @keys = $obj.keys;
+        else {
+            my @keys = $obj.keys;
 
-        if ($sorted-keys) {
-            @keys = @keys.sort;
-        }
+            if ($sorted-keys) {
+                @keys = @keys.sort;
+            }
 
-        for @keys -> $key {
-            $out ~= "\"" ~
-                    ($key ~~ Str ?? str-escape($key) !! $key) ~
-                    "\": " ~
-                    to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~
-                    ',';
-            $spacer();
+            for @keys -> $key {
+                $out ~= "\"" ~
+                        ($key ~~ Str ?? str-escape($key) !! $key) ~
+                        "\": " ~
+                        to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~
+                        ',';
+                $spacer();
+            }
         }
+        $out .=subst(/',' \s* $/, '');
+        $lvl--;
+        $spacer();
     }
-    $out .=subst(/',' \s* $/, '');
-    $lvl--;
-    $spacer();
     $out ~= $arr ?? ']' !! '}';
     return $out;
 }
