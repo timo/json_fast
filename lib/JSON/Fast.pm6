@@ -118,12 +118,11 @@ our sub to-json(
         nqp::push_s(@out,'[');
         nqp::push_s(@out,nqp::substr($comma,1));
 
-        my int $before = nqp::elems(@out);
         for positional.list {
             jsonify($_);
             nqp::push_s(@out,$comma);
         }
-        nqp::pop_s(@out) if nqp::elems(@out) > $before;  # lose last comma
+        nqp::pop_s(@out);  # lose last comma
 
         $comma = nqp::substr($comma,0,nqp::sub_i(nqp::chars($comma),$spacing));
         nqp::push_s(@out,nqp::substr($comma,1));
@@ -138,14 +137,13 @@ our sub to-json(
           ?? associative.sort(*.key)
           !! associative.list;
 
-        my int $before = nqp::elems(@out);
         for pairs {
             jsonify(.key);
             nqp::push_s(@out,": ");
             jsonify(.value);
             nqp::push_s(@out,$comma);
         }
-        nqp::pop_s(@out) if nqp::elems(@out) > $before;  # lose last comma
+        nqp::pop_s(@out);  # lose last comma
 
         $comma = nqp::substr($comma,0,nqp::sub_i(nqp::chars($comma),$spacing));
         nqp::push_s(@out,nqp::substr($comma,1));
