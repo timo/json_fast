@@ -248,7 +248,10 @@ our sub to-json(
                 nqp::push_s(@out,qq/"$_"/);
             }
             when Instant {
-                nqp::push_s(@out,qq/"{.DateTime}"/)
+                nqp::push_s(@out,qq/"{.DateTime}"/);
+            }
+            when Version {
+                jsonify(.Str);
             }
 
             # huh, what?
