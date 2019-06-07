@@ -5,7 +5,7 @@ a naive imperative json parser in pure perl6 (but with direct access to C<nqp::>
 
 Currently it seems to be about 4x faster and uses up about a quarter of the RAM JSON::Tiny would use.
 
-This module also includes a very fast to-json function that tony-o created in tony-o/perl6-json-faster.
+This module also includes a very fast to-json function that tony-o created and lizmat later completely refactored.
 
 =head2 Exported subroutines
 
@@ -49,7 +49,7 @@ a JSON text to decode. Returns a Perl datastructure representing that JSON.
 
 use nqp;
 
-unit module JSON::Fast;
+unit module JSON::Fast:ver<0.9.13>;
 
 multi sub to-surrogate-pair(Int $ord) {
     my int $base   = $ord - 0x10000;

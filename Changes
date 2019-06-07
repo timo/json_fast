@@ -1,0 +1,7 @@
+Revision history for JSON-Fast
+
+{{$NEXT}}
+
+0.9.13  2019-06-07T20:54:16+02:00
+    - Fix pretty output for empty arrays/hashes
+    - Include lizmat's much faster to-json implementation
