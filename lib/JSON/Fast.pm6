@@ -52,136 +52,246 @@ use nqp;
 unit module JSON::Fast;
 
 multi sub to-surrogate-pair(Int $ord) {
-    my int $base = $ord - 0x10000;
-    my $top = $base +& 0b1_1111_1111_1100_0000_0000 +> 10;
-    my $bottom = $base +&            0b11_1111_1111;
-    "\\u" ~ (0xD800 + $top).base(16) ~ "\\u" ~ (0xDC00 + $bottom).base(16);
+    my int $base   = $ord - 0x10000;
+    my int $top    = $base +& 0b1_1111_1111_1100_0000_0000 +> 10;
+    my int $bottom = $base +&               0b11_1111_1111;
+    Q/\u/ ~ (0xD800 + $top).base(16) ~ Q/\u/ ~ (0xDC00 + $bottom).base(16);
 }
 
 multi sub to-surrogate-pair(Str $input) {
     to-surrogate-pair(nqp::ordat($input, 0));
 }
 
-sub str-escape(str $text is copy) {
-    return $text unless $text ~~ /:m <[\x[5C] \x[22] \x[00]..\x[1F] \x[10000]..\x[10FFFF]]>/;
+my $tab := nqp::list_i(92,116); # \t
+my $lf  := nqp::list_i(92,110); # \n
+my $cr  := nqp::list_i(92,114); # \r
+my $qq  := nqp::list_i(92, 34); # \"
+my $bs  := nqp::list_i(92, 92); # \\
 
-    $text .= subst(/ :m <[\\ "]> /,
-        -> $/ {
-            my str $str = $/.Str;
-            if $str eq "\\" {
-                "\\\\"
-            } elsif nqp::ordat($str, 0) == 92 {
-                "\\\\" ~ tear-off-combiners($str, 0)
-            } elsif $str eq "\"" {
-                "\\\""
-            } else {
-                "\\\"" ~ tear-off-combiners($str, 0)
-            }
-        }, :g);
-    $text .= subst(/ <[\x[10000]..\x[10FFFF]]> /,
-        -> $/ {
-            to-surrogate-pair($/.Str);
-        }, :g);
-    $text .= subst(/ :m <[\x[10000]..\x[10FFFF]]> /,
-        -> $/ {
-            to-surrogate-pair($/.Str) ~ tear-off-combiners($/.Str, 0);
-        }, :g);
-    for flat 0..8, 11, 12, 14..0x1f -> $ord {
-        my str $chr = chr($ord);
-        if $text.contains($chr) {
-            $text .= subst($chr, '\\u' ~ $ord.fmt("%04x"), :g);
-        }
-    }
-    $text = $text.subst("\r\n", '\\r\\n',:g)\
-                .subst("\n", '\\n',     :g)\
-                .subst("\r", '\\r',     :g)\
-                .subst("\t", '\\t',     :g);
-    $text;
+# Convert string to decomposed codepoints.  Run over that integer array
+# and inject whatever is necessary, don't do anything if simple ascii.
+# Then convert back to string and return that.
+sub str-escape(\text) {
+    my $codes := text.NFD;
+    my int $i = -1;
+    
+    nqp::while(
+      nqp::islt_i(++$i,nqp::elems($codes)),
+      nqp::if(
+        nqp::isle_i((my int $code = nqp::atpos_i($codes,$i)),92)
+          || nqp::isge_i($code,128),
+        nqp::if(                                           # not ascii
+          nqp::isle_i($code,31),
+          nqp::if(                                          # control
+            nqp::iseq_i($code,10),
+            nqp::splice($codes,$lf,$i++,1),                  # \n
+            nqp::if(
+              nqp::iseq_i($code,13),
+              nqp::splice($codes,$cr,$i++,1),                 # \r
+              nqp::if(
+                nqp::iseq_i($code,9),
+                nqp::splice($codes,$tab,$i++,1),               # \t
+                nqp::stmts(                                    # other control
+                  nqp::splice($codes,$code.fmt(Q/\u%04x/).NFD,$i,1),
+                  ($i = nqp::add_i($i,5))
+                )
+              )
+            )
+          ),
+          nqp::if(                                          # not control
+            nqp::iseq_i($code,34),
+            nqp::splice($codes,$qq,$i++,1),                  # "
+            nqp::if(
+              nqp::iseq_i($code,92),
+              nqp::splice($codes,$bs,$i++,1),                 # \
+              nqp::if(
+                nqp::isge_i($code,0x10000),
+                nqp::stmts(                                    # surrogates
+                  nqp::splice(
+                    $codes,
+                    (my $surrogate := to-surrogate-pair($code.chr).NFD),
+                    $i,
+                    1
+                  ),
+                  ($i = nqp::sub_i(nqp::add_i($i,nqp::elems($surrogate)),1))
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+
+    nqp::strfromcodes($codes)
 }
 
-our sub to-json($obj is copy, Bool :$pretty = True, Int :$level = 0, Int :$spacing = 2, Bool :$sorted-keys = False) is export {
-    return $obj ?? 'true' !! 'false' if $obj ~~ Bool;
+our sub to-json(
+  \obj,
+  Bool :$pretty        = True,
+  Int  :$level         = 0,
+  int  :$spacing       = 2,
+  Bool :$sorted-keys   = False,
+) is export {
 
-    return 'null' if not $obj.defined;
+    my str @out;
+    my str $spaces = ' ' x $spacing;
+    my str $comma  = ",\n" ~ $spaces x $level;
 
-    # Handle allomorphs like IntStr.new(0, '') properly.
-    return $obj.Int.Str if $obj ~~ Int;
-    return to-json($obj.Rat, :$pretty, :$level, :$spacing, :$sorted-keys) if $obj ~~ RatStr;
+#-- helper subs from here, with visibility to the above lexicals
 
-    if $obj ~~ Rat {
-        my $result = $obj.Str;
-        unless $obj.contains(".") {
-            return $result ~ ".0";
+    sub pretty-positional(\positional --> Nil) {
+        $comma = nqp::concat($comma,$spaces);
+        nqp::push_s(@out,'[');
+        nqp::push_s(@out,nqp::substr($comma,1));
+
+        for positional.list {
+            jsonify($_);
+            nqp::push_s(@out,$comma);
         }
-        return $result;
+        nqp::pop_s(@out);  # lose last comma
+
+        $comma = nqp::substr($comma,0,nqp::sub_i(nqp::chars($comma),$spacing));
+        nqp::push_s(@out,nqp::substr($comma,1));
+        nqp::push_s(@out,']');
     }
 
-    if $obj ~~ Num {
-        # Allomorph support for NumStr, too.
-        $obj = $obj.Num;
-        if $obj === NaN || $obj === -Inf || $obj === Inf {
-            if try $*JSON_NAN_INF_SUPPORT {
-                return $obj.Str;
-            } else {
-                return "null";
-            }
-        } else {
-            my $result = $obj.Str;
-            unless $result.contains("e") {
-                return $result ~ "e0";
-            }
-            return $result;
+    sub pretty-associative(\associative --> Nil) {
+        $comma = nqp::concat($comma,$spaces);
+        nqp::push_s(@out,'{');
+        nqp::push_s(@out,nqp::substr($comma,1));
+        my \pairs := $sorted-keys
+          ?? associative.sort(*.key)
+          !! associative.list;
+
+        for pairs {
+            jsonify(.key);
+            nqp::push_s(@out,": ");
+            jsonify(.value);
+            nqp::push_s(@out,$comma);
         }
+        nqp::pop_s(@out);  # lose last comma
+
+        $comma = nqp::substr($comma,0,nqp::sub_i(nqp::chars($comma),$spacing));
+        nqp::push_s(@out,nqp::substr($comma,1));
+        nqp::push_s(@out,'}');
     }
 
-    return "\"" ~ str-escape($obj) ~ "\"" if $obj ~~ Str;
-
-    return “"$obj"” if $obj ~~ Dateish;
-    return “"{$obj.DateTime.Str}"” if $obj ~~ Instant;
-
-    if $obj ~~ Seq {
-        $obj = $obj.cache
+    sub unpretty-positional(\positional --> Nil) {
+        nqp::push_s(@out,'[');
+        my int $before = nqp::elems(@out);
+        for positional.list {
+            jsonify($_);
+            nqp::push_s(@out,",");
+        }
+        nqp::pop_s(@out) if nqp::elems(@out) > $before;  # lose last comma
+        nqp::push_s(@out,']');
     }
 
-    my int  $lvl  = $level;
-    my Bool $arr  = $obj ~~ Positional;
-    my str  $out ~= $arr ?? '[' !! '{';
-    
-    my $spacer   := sub {
-        $out ~= "\n" ~ (' ' x $lvl*$spacing) if $pretty;
-    };
+    sub unpretty-associative(\associative --> Nil) {
+        nqp::push_s(@out,'{');
+        my \pairs := $sorted-keys
+          ?? associative.sort(*.key)
+          !! associative.list;
 
-    if $obj.elems > 0 {
-        $lvl++;
-        $spacer();
-        if $arr {
-            for @($obj) -> $i {
-              $out ~= to-json($i, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~ ',';
-              $spacer();
+        my int $before = nqp::elems(@out);
+        for pairs {
+            jsonify(.key);
+            nqp::push_s(@out,": ");
+            jsonify(.value);
+            nqp::push_s(@out,$comma);
+        }
+        nqp::pop_s(@out) if nqp::elems(@out) > $before;  # lose last comma
+        nqp::push_s(@out,'}');
+    }
+
+    sub jsonify(\obj --> Nil) {
+
+        with obj {
+
+            # basic ones
+            when Bool {
+                nqp::push_s(@out,obj ?? "true" !! "false");
+            }
+            when IntStr {
+                jsonify(.Int);
+            }
+            when RatStr {
+                jsonify(.Rat);
+            }
+            when NumStr {
+                jsonify(.Num);
+            }
+            when Str {
+                nqp::push_s(@out,'"');
+                nqp::push_s(@out,str-escape(obj));
+                nqp::push_s(@out,'"');
+            }
+
+            # numeric ones
+            when Int {
+                nqp::push_s(@out,.Str);
+            }
+            when Rat {
+                nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
+                  given .Str;
+            }
+            when FatRat {
+                nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
+                  given .Str;
+            }
+            when Num {
+                if nqp::isnanorinf($_) {
+                    nqp::push_s(
+                      @out,
+                      $*JSON_NAN_INF_SUPPORT ?? obj.Str !! "null"
+                    );
+                }
+                else {
+                    nqp::push_s(@out,.contains("e") ?? $_ !! $_ ~ "e0")
+                      given .Str;
+                }
+            }
+
+            # iterating ones
+            when Seq {
+                jsonify(.cache);
+            }
+            when Positional {
+                $pretty
+                  ?? pretty-positional($_)
+                  !! unpretty-positional($_);
+            }
+            when Associative {
+                $pretty
+                  ?? pretty-associative($_)
+                  !! unpretty-associative($_);
+            }
+
+            # rarer ones
+            when Dateish {
+                nqp::push_s(@out,qq/"$_"/);
+            }
+            when Instant {
+                nqp::push_s(@out,qq/"{.DateTime}"/);
+            }
+            when Version {
+                jsonify(.Str);
+            }
+
+            # huh, what?
+            default {
+                die "Don't know how to jsonify {.^name}";
             }
         }
         else {
-            my @keys = $obj.keys;
-
-            if ($sorted-keys) {
-                @keys = @keys.sort;
-            }
-
-            for @keys -> $key {
-                $out ~= "\"" ~
-                        ($key ~~ Str ?? str-escape($key) !! $key) ~
-                        "\": " ~
-                        to-json($obj{$key}, :level($level+1), :$spacing, :$pretty, :$sorted-keys) ~
-                        ',';
-                $spacer();
-            }
+            nqp::push_s(@out,'null');
         }
-        $out .=subst(/',' \s* $/, '');
-        $lvl--;
-        $spacer();
     }
-    $out ~= $arr ?? ']' !! '}';
-    return $out;
+
+#-- do the actual work
+
+    jsonify(obj);
+    nqp::join("",@out)
 }
 
 my $ws := nqp::list_i;
@@ -195,16 +305,12 @@ my sub nom-ws(str $text, int $pos is rw --> Nil) {
       if $pos == nqp::chars($text);
 }
 
-my sub tear-off-combiners(str $text, int $pos) {
-    my str $combinerstuff = nqp::substr($text, $pos, 1);
-    my @parts = $combinerstuff.NFD.list;
-    return @parts.skip(1).map({
-            if $^ord > 0x10000 {
-                to-surrogate-pair($ord);
-            } else {
-                $ord.chr()
-            }
-        }).join()
+my sub tear-off-combiners(\text, \pos) {
+    text.substr(pos,1).NFD.skip.map( {
+         $^ord > 0x10000
+           ?? to-surrogate-pair($^ord)
+           !! $^ord.chr
+    } ).join
 }
 
 my Mu $hexdigits := nqp::hash(
