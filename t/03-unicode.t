@@ -13,10 +13,10 @@ my @t =
     '[ "\ud83c\udded\ud83c\uddf7" ]' => [ "🇭🇷" ];
 
 my @out =
-    "\{\"a\": \"bå\"}",
+    "\{\"a\":\"bå\"}",
     '["⚅"]',
     '["̅hello"]',
-    '{"̅hello": "goodbye"}',
+    '{"̅hello":"goodbye"}',
     '["\uD83C\uDDED\uD83C\uDDF7"]';
 
 plan (+@t * 2 + 2 + 2);

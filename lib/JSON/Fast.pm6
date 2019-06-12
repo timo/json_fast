@@ -196,7 +196,7 @@ our sub to-json(
         my int $before = nqp::elems(@out);
         for pairs {
             jsonify(.key);
-            nqp::push_s(@out,": ");
+            nqp::push_s(@out,":");
             jsonify(.value);
             nqp::push_s(@out,$comma);
         }
