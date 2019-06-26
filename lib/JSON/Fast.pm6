@@ -51,6 +51,16 @@ use nqp;
 
 unit module JSON::Fast:ver<0.9.13>;
 
+our class X::JSON::AdditionalContent is Exception is export {
+    has $.parsed;
+    has $.parsed-length;
+    has $.rest-position;
+
+    method message {
+        "JSON Input contained additional text after the document (parsed $.parsed-length chars, next non-whitespace lives at $.rest-position)"
+    }
+}
+
 multi sub to-surrogate-pair(Int $ord) {
     my int $base   = $ord - 0x10000;
     my int $top    = $base +& 0b1_1111_1111_1100_0000_0000 +> 10;
@@ -636,10 +646,12 @@ our sub from-json(Str() $text) is export {
 
     my $result = parse-thing($text, $pos);
 
+    my int $parsed-length = $pos;
+
     try nom-ws($text, $pos);
 
     if $pos != nqp::chars($text) {
-        die "additional text after the end of the document: { substr($text, $pos).perl }";
+        X::JSON::AdditionalContent.new(parsed => $result, :$parsed-length, rest-position => $pos).throw
     }
 
     $result;

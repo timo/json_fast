@@ -1,6 +1,9 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Unexpected extra data after parse now gives a structured exception
+      including the parsed data so far, and the position parsing ended,
+      so that multiple documents in a file can be parsed just fine.
 
 0.9.13  2019-06-07T20:54:16+02:00
     - Fix pretty output for empty arrays/hashes
