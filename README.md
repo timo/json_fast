@@ -41,3 +41,10 @@ Encode a Perl data structure into JSON. Takes one positional argument, which is 
 
 Takes one positional argument that is coerced into a `Str` type and represents a JSON text to decode. Returns a Perl datastructure representing that JSON.
 
+Additional features
+-------------------
+
+### Strings containing multiple json pieces
+
+When the document contains additional non-whitespace after the first successfully parsed JSON object, JSON::Fast will throw the exception `X::JSON::AdditionalContent`. If you expect multiple objects, you can catch that exception, retrieve the parse result from its `parsed` attribute, and remove the first `rest-position` characters off of the string and restart parsing from there.
+

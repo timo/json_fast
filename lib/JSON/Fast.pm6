@@ -45,11 +45,22 @@ be sorted before serializing them to a string or if C<$obj.keys> is good enough.
 Takes one positional argument that is coerced into a C<Str> type and represents
 a JSON text to decode. Returns a Perl datastructure representing that JSON.
 
+=head2 Additional features
+
+=head3 Strings containing multiple json pieces
+
+When the document contains additional non-whitespace after the first
+successfully parsed JSON object, JSON::Fast will throw the exception
+C<X::JSON::AdditionalContent>. If you expect multiple objects, you
+can catch that exception, retrieve the parse result from its
+C<parsed> attribute, and remove the first C<rest-position> characters
+off of the string and restart parsing from there.
+
 =end pod
 
 use nqp;
 
-unit module JSON::Fast:ver<0.9.13>;
+unit module JSON::Fast:ver<0.9.14>;
 
 our class X::JSON::AdditionalContent is Exception is export {
     has $.parsed;

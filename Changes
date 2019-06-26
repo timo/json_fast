@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.9.14  2019-06-27T01:51:50+02:00
     - Nonpretty output doesn't need a space between keys and values
     - Unexpected extra data after parse now gives a structured exception
       including the parsed data so far, and the position parsing ended,
