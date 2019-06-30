@@ -247,6 +247,11 @@ our sub to-json(
                 nqp::push_s(@out,str-escape(obj));
                 nqp::push_s(@out,'"');
             }
+            when Enumeration {
+                nqp::push_s(@out,'"');
+                nqp::push_s(@out,str-escape(obj.key));
+                nqp::push_s(@out,'"');
+            }
 
             # numeric ones
             when Int {
