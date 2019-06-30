@@ -60,7 +60,7 @@ off of the string and restart parsing from there.
 
 use nqp;
 
-unit module JSON::Fast:ver<0.9.14>;
+unit module JSON::Fast:ver<0.9.15>;
 
 our class X::JSON::AdditionalContent is Exception is export {
     has $.parsed;

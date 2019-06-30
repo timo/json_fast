@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.9.15  2019-07-01T00:34:29+02:00
     - Enums jsonify as a string of their short name again.
 
 0.9.14  2019-06-27T01:51:50+02:00
