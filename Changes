@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - :!pretty now promises only a single line of output.
 
 0.9.15  2019-07-01T00:34:29+02:00
     - Enums jsonify as a string of their short name again.

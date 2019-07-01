@@ -23,7 +23,7 @@ is a thing you want to encode into JSON. Takes these optional named arguments:
 =head4 pretty
 
 C<Bool>. Defaults to C<True>. Specifies whether the output should be "pretty",
-human-readable JSON.
+human-readable JSON. When set to false, will output json in a single line.
 
 =head4 spacing
 
@@ -219,7 +219,7 @@ our sub to-json(
             jsonify(.key);
             nqp::push_s(@out,":");
             jsonify(.value);
-            nqp::push_s(@out,$comma);
+            nqp::push_s(@out,",");
         }
         nqp::pop_s(@out) if nqp::elems(@out) > $before;  # lose last comma
         nqp::push_s(@out,'}');

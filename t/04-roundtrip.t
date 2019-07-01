@@ -39,11 +39,13 @@ my @s =
         'URLs'           => [ 'http:\/\/www.github.com\/perl6\/nqp\/' ],
         ;
 
-plan +@s;
+plan @s * 2;
 
 for @s.kv -> $k, $v {
     my $source-data = $v.value ~~ Pair ?? $v.value.key !! $v.value;
-    my $r = from-json( to-json( $source-data, :!pretty ) );
+    my Str $jsonified = to-json( $source-data, :!pretty );
+    is $jsonified.lines.elems, 1, ":!pretty jsonified has only a single line";
+    my $r = from-json( $jsonified );
     if $v.value ~~ Pair {
         is-deeply $r, $v.value.value, $v.key;
     } else {

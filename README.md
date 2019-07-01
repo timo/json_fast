@@ -23,7 +23,7 @@ Encode a Perl data structure into JSON. Takes one positional argument, which is 
 
 #### pretty
 
-`Bool`. Defaults to `True`. Specifies whether the output should be "pretty", human-readable JSON.
+`Bool`. Defaults to `True`. Specifies whether the output should be "pretty", human-readable JSON. When set to false, will output json in a single line.
 
 #### spacing
 
