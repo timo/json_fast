@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.9.16  2019-07-01T19:18:14+02:00
     - :!pretty now promises only a single line of output.
 
 0.9.15  2019-07-01T00:34:29+02:00
