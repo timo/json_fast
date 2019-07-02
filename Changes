@@ -2,6 +2,9 @@ Revision history for JSON-Fast
 
 {{$NEXT}}
 
+0.9.17  2019-07-02T02:47:36+02:00
+    - Slight improvement of to-json speed
+
 0.9.16  2019-07-01T19:18:14+02:00
     - :!pretty now promises only a single line of output.
 
