@@ -60,7 +60,7 @@ off of the string and restart parsing from there.
 
 use nqp;
 
-unit module JSON::Fast:ver<0.9.17>;
+unit module JSON::Fast:ver<0.9.18>;
 
 our class X::JSON::AdditionalContent is Exception is export {
     has $.parsed;
@@ -230,42 +230,42 @@ our sub to-json(
         with obj {
 
             # basic ones
-            if Bool.ACCEPTS($_) {
+            if nqp::istype($_, Bool) {
                 nqp::push_s(@out,obj ?? "true" !! "false");
             }
-            elsif IntStr.ACCEPTS($_) {
+            elsif nqp::istype($_, IntStr) {
                 jsonify(.Int);
             }
-            elsif RatStr.ACCEPTS($_) {
+            elsif nqp::istype($_, RatStr) {
                 jsonify(.Rat);
             }
-            elsif NumStr.ACCEPTS($_) {
+            elsif nqp::istype($_, NumStr) {
                 jsonify(.Num);
             }
-            elsif Str.ACCEPTS($_) {
+            elsif nqp::istype($_, Str) {
                 nqp::push_s(@out,'"');
                 nqp::push_s(@out,str-escape($_));
                 nqp::push_s(@out,'"');
             }
-            elsif Enumeration.ACCEPTS($_) {
+            elsif nqp::istype($_, Enumeration) {
                 nqp::push_s(@out,'"');
                 nqp::push_s(@out,str-escape(.key));
                 nqp::push_s(@out,'"');
             }
 
             # numeric ones
-            elsif Int.ACCEPTS($_) {
+            elsif nqp::istype($_, Int) {
                 nqp::push_s(@out,.Str);
             }
-            elsif Rat.ACCEPTS($_) {
+            elsif nqp::istype($_, Rat) {
                 nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
                   given .Str;
             }
-            elsif FatRat.ACCEPTS($_) {
+            elsif nqp::istype($_, FatRat) {
                 nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
                   given .Str;
             }
-            elsif Num.ACCEPTS($_) {
+            elsif nqp::istype($_, Num) {
                 if nqp::isnanorinf($_) {
                     nqp::push_s(
                       @out,
@@ -279,28 +279,28 @@ our sub to-json(
             }
 
             # iterating ones
-            elsif Seq.ACCEPTS($_) {
+            elsif nqp::istype($_, Seq) {
                 jsonify(.cache);
             }
-            elsif Positional.ACCEPTS($_) {
+            elsif nqp::istype($_, Positional) {
                 $pretty
                   ?? pretty-positional($_)
                   !! unpretty-positional($_);
             }
-            elsif Associative.ACCEPTS($_) {
+            elsif nqp::istype($_, Associative) {
                 $pretty
                   ?? pretty-associative($_)
                   !! unpretty-associative($_);
             }
 
             # rarer ones
-            elsif Dateish.ACCEPTS($_) {
+            elsif nqp::istype($_, Dateish) {
                 nqp::push_s(@out,qq/"$_"/);
             }
-            elsif Instant.ACCEPTS($_) {
+            elsif nqp::istype($_, Instant) {
                 nqp::push_s(@out,qq/"{.DateTime}"/);
             }
-            elsif Version.ACCEPTS($_) {
+            elsif nqp::istype($_, Version) {
                 jsonify(.Str);
             }
 
