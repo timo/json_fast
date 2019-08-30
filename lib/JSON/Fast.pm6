@@ -17,6 +17,10 @@ This module also includes a very fast to-json function that tony-o created and l
     say to-json [<my Perl data structure>], :!pretty;
     say to-json [<my Perl data structure>], :spacing(4);
 
+    enum Blerp <Hello Goodbye>;
+    say to-json [Hello, Goodbye]; # ["Hello", "Goodbye"]
+    say to-json [Hello, Goodbye], :enums-as-value; # [0, 1]
+
 Encode a Perl data structure into JSON. Takes one positional argument, which
 is a thing you want to encode into JSON. Takes these optional named arguments:
 
@@ -148,10 +152,11 @@ sub str-escape(\text) {
 
 our sub to-json(
   \obj,
-  Bool :$pretty        = True,
-  Int  :$level         = 0,
-  int  :$spacing       = 2,
-  Bool :$sorted-keys   = False,
+  Bool :$pretty         = True,
+  Int  :$level          = 0,
+  int  :$spacing        = 2,
+  Bool :$sorted-keys    = False,
+  Bool :$enums-as-value = False,
 ) is export {
 
     my str @out;
@@ -242,14 +247,21 @@ our sub to-json(
             elsif nqp::istype($_, NumStr) {
                 jsonify(.Num);
             }
+            elsif nqp::istype($_, Enumeration) {
+                if $enums-as-value {
+                    jsonify(.value);
+                }
+                else {
+                    nqp::push_s(@out,'"');
+                    nqp::push_s(@out,str-escape(.key));
+                    nqp::push_s(@out,'"');
+                }
+            }
+            # Str and Int go below Enumeration, because there
+            # are both Str-typed enums and Int-typed enums
             elsif nqp::istype($_, Str) {
                 nqp::push_s(@out,'"');
                 nqp::push_s(@out,str-escape($_));
-                nqp::push_s(@out,'"');
-            }
-            elsif nqp::istype($_, Enumeration) {
-                nqp::push_s(@out,'"');
-                nqp::push_s(@out,str-escape(.key));
                 nqp::push_s(@out,'"');
             }
 

@@ -1,6 +1,9 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Enums now consistently jsonify as their keys
+    - Add :enums-as-values to override enum jsonification
+      to give values instead of keys.
 
 0.9.18  2019-07-02T03:05:24+02:00
     - More significant improvement of to-json speed
