@@ -19,6 +19,10 @@ Exported subroutines
         say to-json [<my Perl data structure>], :!pretty;
         say to-json [<my Perl data structure>], :spacing(4);
 
+    enum Blerp <Hello Goodbye>;
+    say to-json [Hello, Goodbye]; # ["Hello", "Goodbye"]
+    say to-json [Hello, Goodbye], :enums-as-value; # [0, 1]
+
 Encode a Perl data structure into JSON. Takes one positional argument, which is a thing you want to encode into JSON. Takes these optional named arguments:
 
 #### pretty
