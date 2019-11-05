@@ -45,6 +45,7 @@ plan @s * 2;
 for @s.kv -> $k, $v {
     my $source-data = $v.value ~~ Pair ?? $v.value.key !! $v.value;
     my Str $jsonified = to-json( $source-data, :!pretty );
+    say "Jsonified $jsonified";
     is $jsonified.lines.elems, 1, ":!pretty jsonified has only a single line";
     my $r = from-json( $jsonified );
     if $v.value ~~ Pair {

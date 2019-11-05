@@ -190,7 +190,12 @@ our sub to-json(
           !! associative.list;
 
         for pairs {
-            jsonify(.key);
+	    say "Pretty jsonifying → ", .key;
+	    if .key ~~ Int {
+		jsonify('"' ~ .key ~ '"');
+	    } else {
+		jsonify(.key);
+	    }
             nqp::push_s(@out,": ");
             jsonify(.value);
             nqp::push_s(@out,$comma);
@@ -221,7 +226,12 @@ our sub to-json(
 
         my int $before = nqp::elems(@out);
         for pairs {
-            jsonify(.key);
+	    say "Unpretty jsonifying → ", .key;
+	    if .key ~~ Int {
+		jsonify('"' ~ .key ~ '"');
+	    } else {
+		jsonify(.key);
+	    }
             nqp::push_s(@out,":");
             jsonify(.value);
             nqp::push_s(@out,",");
@@ -567,7 +577,6 @@ my sub parse-obj(str $text, int $pos is rw) {
             #my str $partitioner = nqp::substr($text, $pos, 1);
 
             if      nqp::eqat($text, ':', $pos) and   !($key.DEFINITE or      $value.DEFINITE) {
-		die "Keys must be quoted" unless $thing.index('"');
 		$key = $thing;
             } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
