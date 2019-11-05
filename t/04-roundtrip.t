@@ -37,6 +37,7 @@ my @s =
                             },
         'Backslashes 1'  => [ "\"Hi\".literal newlnie:\nbackslashed n:\\nbackslashed newlnie:\\\nbackslashes and quotes: \\\"" ],
         'URLs'           => [ 'http:\/\/www.github.com\/perl6\/nqp\/' ],
+	'Numeric keys'   => { 3 => 3 },
         ;
 
 plan @s * 2;

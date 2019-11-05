@@ -567,7 +567,8 @@ my sub parse-obj(str $text, int $pos is rw) {
             #my str $partitioner = nqp::substr($text, $pos, 1);
 
             if      nqp::eqat($text, ':', $pos) and   !($key.DEFINITE or      $value.DEFINITE) {
-                $key = $thing;
+		die "Keys must be quoted" unless $thing.index('"');
+		$key = $thing;
             } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
                 $value = $thing;
 
