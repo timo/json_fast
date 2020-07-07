@@ -445,6 +445,12 @@ my sub parse-string(str $text, int $pos is rw) {
     if not $has_treacherous and not $has_hexcodes and $escape_counts {
         my str @a;
         my str @b;
+        if nqp::existskey($escape_counts, "b") {
+            @a.push("\\b"); @b.push("\b");
+        }
+        if nqp::existskey($escape_counts, "f") {
+            @a.push("\\f"); @b.push("\f");
+        }
         if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
             @a.push("\\r\\n"); @b.push("\r\n");
         }
