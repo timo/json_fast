@@ -2,6 +2,9 @@ Revision history for JSON-Fast
 
 {{$NEXT}}
 
+0.12  2020-07-08T21:03:47+02:00
+    - Make sure object-keyed hashes stringify keys
+
 0.11  2020-07-08T20:38:47+02:00
     - Fix rejecting valid escape sequences sometimes
     - Fix escaping \f and \b

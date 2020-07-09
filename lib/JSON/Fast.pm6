@@ -64,7 +64,7 @@ off of the string and restart parsing from there.
 
 use nqp;
 
-unit module JSON::Fast:ver<0.11>;
+unit module JSON::Fast:ver<0.12>;
 
 our class X::JSON::AdditionalContent is Exception is export {
     has $.parsed;
@@ -190,8 +190,9 @@ our sub to-json(
           !! associative.list;
 
         for pairs {
-            jsonify(.key);
-            nqp::push_s(@out,": ");
+            nqp::push_s(@out,'"');
+            nqp::push_s(@out, .key.Str);
+            nqp::push_s(@out,'": ');
             jsonify(.value);
             nqp::push_s(@out,$comma);
         }
@@ -221,8 +222,9 @@ our sub to-json(
 
         my int $before = nqp::elems(@out);
         for pairs {
-            jsonify(.key);
-            nqp::push_s(@out,":");
+            nqp::push_s(@out, '"');
+            nqp::push_s(@out, .key.Str);
+            nqp::push_s(@out,'":');
             jsonify(.value);
             nqp::push_s(@out,",");
         }
