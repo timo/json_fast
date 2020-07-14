@@ -609,7 +609,7 @@ my sub parse-array(str $text, int $pos is rw) {
 
     if nqp::eqat($text, ']', $pos) {
         $pos = $pos + 1;
-        [];
+        @result;
     } else {
         my $thing;
         my str $partitioner;
