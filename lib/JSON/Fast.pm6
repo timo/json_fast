@@ -670,22 +670,17 @@ my sub parse-thing(str $text, int $pos is rw) {
 }
 
 our sub from-json(Str() $text) is export {
-    my str $ntext = $text;
-    my int $length = $text.chars;
-
-    my int $pos = 0;
-
-    my $result = parse-thing($text, $pos);
+    my int $pos;
+    my $result := parse-thing($text, $pos);
 
     my int $parsed-length = $pos;
-
     try nom-ws($text, $pos);
 
     if $pos != nqp::chars($text) {
         X::JSON::AdditionalContent.new(parsed => $result, :$parsed-length, rest-position => $pos).throw
     }
 
-    $result;
+    $result
 }
 
 # vi:syntax=perl6
