@@ -335,10 +335,11 @@ our sub to-json(
 }
 
 my $ws := nqp::list_i;
-nqp::bindpos_i($ws,$_ + 1,1) for 9,10,13,32;  # allow for -1 as value
+nqp::bindpos_i($ws,$_,1) for 9,10,13,32;
+nqp::push_i($ws,0);  # allow for -1 as value
 my sub nom-ws(str $text, int $pos is rw --> Nil) {
     nqp::while(
-      nqp::atpos_i($ws,nqp::ordat($text,$pos) + 1),
+      nqp::atpos_i($ws,nqp::ordat($text,$pos)),
       $pos = $pos + 1
     );
     die "reached end of string when looking for something"
