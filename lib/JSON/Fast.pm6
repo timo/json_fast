@@ -636,42 +636,36 @@ my sub parse-array(str $text, int $pos is rw) {
 my sub parse-thing(str $text, int $pos is rw) {
     nom-ws($text, $pos);
 
-    my str $initial = nqp::substr($text, $pos, 1);
-
-    $pos = $pos + 1;
-
-    if nqp::ord($initial) == 34 { # "
-        parse-string($text, $pos);
-    } elsif $initial eq '[' {
-        parse-array($text, $pos);
-    } elsif $initial eq '{' {
-        parse-obj($text, $pos);
-    } elsif nqp::iscclass(nqp::const::CCLASS_NUMERIC, $initial, 0) || $initial eq '-' {
-        parse-numeric($text, $pos);
-    } elsif $initial eq 'n' {
-        if nqp::eqat($text, 'ull', $pos) {
-            $pos += 3;
-            Any;
-        } else {
-            die "at $pos: i was expecting a 'null' but there wasn't one: { nqp::substr($text, $pos - 1, 10) }"
-        }
-    } elsif $initial eq 't' {
-        if nqp::eqat($text, 'rue', $pos) {
-            $pos = $pos + 3;
-            True
-        } else {
-            die "at $pos: expected 'true', found { $initial ~ nqp::substr($text, $pos, 3) } instead.";
-        }
-    } elsif $initial eq 'f' {
-        if nqp::eqat($text, 'alse', $pos) {
-            $pos = $pos + 4;
-            False
-        } else {
-            die "at $pos: expected 'false', found { $initial ~ nqp::substr($text, $pos, 4) } instead.";
-        }
-    } else {
-        my str $rest = nqp::substr($text, $pos - 1, 8).perl;
-        die "at $pos: expected a json object, but got $initial (context: $rest)"
+    my int $ordinal = nqp::ordat($text, $pos);
+    if nqp::iseq_i($ordinal,34) {  # "
+        parse-string($text, $pos = $pos + 1)
+    }
+    elsif nqp::iseq_i($ordinal,91) {  # [
+        parse-array($text, $pos = $pos + 1)
+    }
+    elsif nqp::iseq_i($ordinal,123) {  # {
+        parse-obj($text, $pos = $pos + 1)
+    }
+    elsif nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos)
+      || nqp::iseq_i($ordinal,45) {  # -
+        parse-numeric($text, $pos = $pos + 1)
+    }
+    elsif nqp::iseq_i($ordinal,116) && nqp::eqat($text,'true',$pos) {
+        $pos = $pos + 4;
+        True
+    }
+    elsif nqp::iseq_i($ordinal,102) && nqp::eqat($text,'false',$pos) {
+        $pos = $pos + 5;
+        False
+    }
+    elsif nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos) {
+        $pos = $pos + 4;
+        Any
+    }
+    else {
+        die "at $pos: expected a json object, but got '{
+          nqp::substr($text, $pos, 8).perl
+        }'";
     }
 }
 
