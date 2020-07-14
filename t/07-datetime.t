@@ -24,12 +24,13 @@ my $json = to-json @data;
 
 my @data-round-trip := from-json $json;
 
+my @tripped;
 with @data-round-trip {
-    .[0] = DateTime.new(.[0]);
-    .[1] = DateTime.new(.[1]);
-    .[2] = DateTime.new(.[2]).Instant;
-    .[3] = Date.new(.[3]);
+    @tripped.push: DateTime.new(.[0]);
+    @tripped.push: DateTime.new(.[1]);
+    @tripped.push: DateTime.new(.[2]).Instant;
+    @tripped.push: Date.new(.[3]);
 }
 
-ok all(@data-round-trip »=~=« @data), ‚Roundtrip for DateTime instant, DateTime, Date and Instant instant works‘;
+ok all(@tripped »=~=« @data), ‚Roundtrip for DateTime instant, DateTime, Date and Instant instant works‘;
 
