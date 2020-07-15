@@ -604,33 +604,46 @@ my sub parse-obj(str $text, int $pos is rw) {
 
 my sub parse-array(str $text, int $pos is rw) {
     my @result;
+    nqp::bindattr(@result, List, '$!reified',
+      my $buffer := nqp::create(IterationBuffer));
+    my $descriptor := nqp::getattr(@result, Array, '$!descriptor');
 
     nom-ws($text, $pos);
-
-    if nqp::eqat($text, ']', $pos) {
-        $pos = $pos + 1;
-        @result;
-    } else {
-        my $thing;
-        my str $partitioner;
-        loop {
-            $thing = parse-thing($text, $pos);
-            nom-ws($text, $pos);
-
-            $partitioner = nqp::substr($text, $pos, 1);
-            $pos = $pos + 1;
-
-            if $partitioner eq ']' {
-                @result.push: $thing;
-                last;
-            } elsif $partitioner eq "," {
-                @result.push: $thing;
-            } else {
-                die "at $pos, unexpected $partitioner inside list of things in an array";
-            }
-        }
-        @result;
-    }
+    nqp::if(
+      nqp::eqat($text, ']', $pos),
+      nqp::stmts(
+        ($pos = nqp::add_i($pos,1)),
+        @result
+      ),
+      nqp::stmts(
+        nqp::while(
+          1,
+          nqp::stmts(
+            (my $thing := parse-thing($text, $pos)),
+            nom-ws($text, $pos),
+            (my int $partitioner = nqp::ordat($text, $pos)),
+            nqp::if(
+              nqp::iseq_i($partitioner,93),  # ]
+              nqp::stmts(
+                nqp::push($buffer,nqp::p6scalarwithvalue($descriptor,$thing)),
+                ($pos = nqp::add_i($pos,1)),
+                (return @result)
+              ),
+              nqp::if(
+                nqp::iseq_i($partitioner,44),  # ,
+                nqp::stmts(
+                  nqp::push($buffer,nqp::p6scalarwithvalue($descriptor,$thing)),
+                  ($pos = nqp::add_i($pos,1))
+                ),
+                (die "at $pos, unexpected partitioner '{
+                    nqp::substr($text,$pos,1)
+                }' inside list of things in an array")
+              )
+            )
+          )
+        )
+      )
+    )
 }
 
 my sub parse-thing(str $text, int $pos is rw) {
