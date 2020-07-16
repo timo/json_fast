@@ -389,6 +389,23 @@ nqp::bindpos($escapees, 114, "\r");
 nqp::bindpos($escapees, 116, "\t");
 
 my sub parse-string(str $text, int $pos is rw) {
+    nqp::if(
+      nqp::eqat($text, '"', nqp::sub_i($pos,1))  # starts with clean "
+        && nqp::eqat($text, '"',                 # ends with clean "
+             (my int $end = nqp::findnotcclass(nqp::const::CCLASS_WORD,
+               $text, $pos, nqp::sub_i(nqp::chars($text),$pos)))
+      ),
+      nqp::stmts(
+        (my $string := nqp::substr($text, $pos, nqp::sub_i($end, $pos))),
+        ($pos = nqp::add_i($end,1)),
+        $string
+      ),
+      parse-string-slow($text, $pos)
+    )
+}
+
+my sub parse-string-slow(str $text, int $pos is rw) {
+
     # first we gallop until the end of the string
     my int $startpos = $pos;
     my int $endpos;
