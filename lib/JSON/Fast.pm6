@@ -354,10 +354,29 @@ my sub tear-off-combiners(\text, \pos) {
     } ).join
 }
 
-my Mu $hexdigits := nqp::hash(
-    '97', 1, '98', 1, '99', 1, '100', 1, '101', 1, '102', 1,
-    '48', 1, '49', 1, '50', 1, '51', 1, '52', 1, '53', 1, '54', 1, '55', 1, '56', 1, '57', 1,
-    '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
+my $hexdigits := nqp::list;
+nqp::bindpos($hexdigits,  48, 1);  # 0
+nqp::bindpos($hexdigits,  49, 1);  # 1
+nqp::bindpos($hexdigits,  50, 1);  # 2
+nqp::bindpos($hexdigits,  51, 1);  # 3
+nqp::bindpos($hexdigits,  52, 1);  # 4
+nqp::bindpos($hexdigits,  53, 1);  # 5
+nqp::bindpos($hexdigits,  54, 1);  # 6
+nqp::bindpos($hexdigits,  55, 1);  # 7
+nqp::bindpos($hexdigits,  56, 1);  # 8
+nqp::bindpos($hexdigits,  57, 1);  # 9
+nqp::bindpos($hexdigits,  65, 1);  # A
+nqp::bindpos($hexdigits,  66, 1);  # B
+nqp::bindpos($hexdigits,  67, 1);  # C
+nqp::bindpos($hexdigits,  68, 1);  # D
+nqp::bindpos($hexdigits,  69, 1);  # E
+nqp::bindpos($hexdigits,  70, 1);  # F
+nqp::bindpos($hexdigits,  97, 1);  # a
+nqp::bindpos($hexdigits,  98, 1);  # b
+nqp::bindpos($hexdigits,  99, 1);  # c
+nqp::bindpos($hexdigits, 100, 1);  # d
+nqp::bindpos($hexdigits, 101, 1);  # e
+nqp::bindpos($hexdigits, 102, 1);  # f
 
 my $escapees := nqp::list;
 nqp::bindpos($escapees,  34, '"');
@@ -411,10 +430,10 @@ my sub parse-string(str $text, int $pos is rw) {
             } elsif nqp::eqat($text, 'u', $pos) {
                 loop {
                     die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                    if      nqp::existskey($hexdigits, nqp::ordat($text, $pos + 1))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 2))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 3))
-                        and nqp::existskey($hexdigits, nqp::ordat($text, $pos + 4)) {
+                    if      nqp::atpos($hexdigits, nqp::ordat($text, $pos + 1))
+                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 2))
+                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 3))
+                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 4)) {
                         $pos = $pos + 4;
                     } else {
                         die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
