@@ -544,62 +544,67 @@ my sub parse-numeric(str $text, int $pos is rw) {
 
 my sub parse-obj(str $text, int $pos is rw) {
     my %result;
-
-    my $key;
-    my $value;
+    my $hash := nqp::ifnull(
+      nqp::getattr(%result,Map,'$!storage'),
+      nqp::bindattr(%result,Map,'$!storage',nqp::hash)
+    );
 
     nom-ws($text, $pos);
-
-    if nqp::eqat($text, '}', $pos) {
-        $pos = $pos + 1;
-        %();
-    } else {
-        my $thing;
-        loop {
-            $thing = Any;
-
-            if $key.DEFINITE {
-                $thing = parse-thing($text, $pos)
-            } else {
-                nom-ws($text, $pos);
-
-                if nqp::ordat($text, $pos) == 34 { # "
-                    $pos = $pos + 1;
-                    $thing = parse-string($text, $pos)
-                } else {
-                    die "at end of string: expected a quoted string for an object key" if $pos == nqp::chars($text);
-                    die "at $pos: json requires object keys to be strings";
-                }
-            }
-            nom-ws($text, $pos);
-
-            #my str $partitioner = nqp::substr($text, $pos, 1);
-
-            if      nqp::eqat($text, ':', $pos) and   !($key.DEFINITE or      $value.DEFINITE) {
-                $key = $thing;
-            } elsif nqp::eqat($text, ',', $pos) and     $key.DEFINITE and not $value.DEFINITE {
-                $value = $thing;
-
-                %result{$key} = $value;
-
-                $key   = Any;
-                $value = Any;
-            } elsif nqp::eqat($text, '}', $pos) and     $key.DEFINITE and not $value.DEFINITE {
-                $value = $thing;
-
-                %result{$key} = $value;
-                $pos = $pos + 1;
-                last;
-            } else {
-                die "at end of string: unexpected end of object." if $pos == nqp::chars($text);
-                die "unexpected { nqp::substr($text, $pos, 1) } in an object at $pos";
-            }
-
-            $pos = $pos + 1;
-        }
-
-        %result;
-    }
+    my int $ordinal = nqp::ordat($text, $pos);
+    nqp::if(
+      nqp::iseq_i($ordinal, 125),  # }             {
+      nqp::stmts(
+        ($pos = nqp::add_i($pos,1)),
+        %result
+      ),
+      nqp::stmts(
+        my $descriptor := nqp::getattr(%result,Hash,'$!descriptor');
+        nqp::stmts(  # this level is needed for some reason
+          nqp::while(
+            1,
+            nqp::stmts(
+              nqp::if(
+                nqp::iseq_i($ordinal, 34),  # "
+                (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
+                (die nqp::if(
+                  nqp::iseq_i($pos, nqp::chars($text)),
+                  "at end of string: expected a quoted string for an object key",
+                  "at $pos: json requires object keys to be strings"
+                ))
+              ),
+              nom-ws($text, $pos),
+              nqp::if(
+                nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
+                ($pos = nqp::add_i($pos, 1)),
+                (die "expected to see a ':' after an object key")
+              ),
+              nom-ws($text, $pos),
+              nqp::bindkey($hash, $key,
+                nqp::p6scalarwithvalue($descriptor, parse-thing($text, $pos))),
+              nom-ws($text, $pos),
+              ($ordinal = nqp::ordat($text, $pos)),
+              nqp::if(
+                nqp::iseq_i($ordinal, 125),  # }  {
+                nqp::stmts(
+                  ($pos = nqp::add_i($pos,1)),
+                  (return %result)
+                ),
+                nqp::unless(
+                  nqp::iseq_i($ordinal, 44),  # ,
+                  (die nqp::if(
+                    nqp::iseq_i($pos, nqp::chars($text)),
+                    "at end of string: unexpected end of object.",
+                    "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos"
+                  ))
+                )
+              ),
+              nom-ws($text, $pos = nqp::add_i($pos,1)),
+              ($ordinal = nqp::ordat($text, $pos)),
+            )
+          )
+        )
+      )
+    )
 }
 
 my sub parse-array(str $text, int $pos is rw) {
