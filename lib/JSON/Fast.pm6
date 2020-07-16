@@ -546,7 +546,7 @@ my sub parse-numeric(str $text, int $pos is rw) {
     my int $end = nqp::findnotcclass(nqp::const::CCLASS_NUMERIC,
       $text, $pos, nqp::sub_i(nqp::chars($text),$pos));
     nqp::if(
-      nqp::iseq_i((my int $ordinal = nqp::ordat($text, $end)) , 46),  # .
+      nqp::iseq_i(nqp::ordat($text, $end), 46),                      # .
       nqp::stmts(
         ($pos = nqp::add_i($end,1)),
         ($end = nqp::findnotcclass(nqp::const::CCLASS_NUMERIC,
@@ -556,8 +556,8 @@ my sub parse-numeric(str $text, int $pos is rw) {
     );
 
     nqp::if(
-      nqp::iseq_i(($ordinal = nqp::ordat($text, $end)), 101)  # e
-       || nqp::iseq_i($ordinal, 69),                          # E
+      nqp::iseq_i((my int $ordinal = nqp::ordat($text, $end)), 101)  # e
+       || nqp::iseq_i($ordinal, 69),                                 # E
       nqp::stmts(
         ($pos = nqp::add_i($end,1)),
         ($pos = nqp::add_i($pos,
