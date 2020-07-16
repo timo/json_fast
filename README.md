@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/timo/json_fast.svg?branch=master)](https://travis-ci.org/timo/json_fast)
-
 JSON::Fast
 ==========
 

@@ -606,7 +606,6 @@ my sub parse-array(str $text, int $pos is rw) {
     my @result;
     nqp::bindattr(@result, List, '$!reified',
       my $buffer := nqp::create(IterationBuffer));
-    my $descriptor := nqp::getattr(@result, Array, '$!descriptor');
 
     nom-ws($text, $pos);
     nqp::if(
@@ -616,6 +615,7 @@ my sub parse-array(str $text, int $pos is rw) {
         @result
       ),
       nqp::stmts(
+        (my $descriptor := nqp::getattr(@result, Array, '$!descriptor')),
         nqp::while(
           1,
           nqp::stmts(
