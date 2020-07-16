@@ -541,31 +541,46 @@ my sub parse-string(str $text, int $pos is rw) {
 }
 
 my sub parse-numeric(str $text, int $pos is rw) {
-    my int $startpos = $pos;
+    my int $start = nqp::sub_i($pos,1);
 
-    $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
+    my int $end = nqp::findnotcclass(nqp::const::CCLASS_NUMERIC,
+      $text, $pos, nqp::sub_i(nqp::chars($text),$pos));
+    nqp::if(
+      nqp::iseq_i((my int $ordinal = nqp::ordat($text, $end)) , 46),  # .
+      nqp::stmts(
+        ($pos = nqp::add_i($end,1)),
+        ($end = nqp::findnotcclass(nqp::const::CCLASS_NUMERIC,
+          $text, $pos, nqp::sub_i(nqp::chars($text),$pos))
+        )
+      )
+    );
 
-    my $residual := nqp::substr($text, $pos, 1);
+    nqp::if(
+      nqp::iseq_i(($ordinal = nqp::ordat($text, $end)), 101)  # e
+       || nqp::iseq_i($ordinal, 69),                          # E
+      nqp::stmts(
+        ($pos = nqp::add_i($end,1)),
+        ($pos = nqp::add_i($pos,
+          nqp::eqat($text, '-', $pos) || nqp::eqat($text, '+', $pos)
+        )),
+        ($end = nqp::findnotcclass(nqp::const::CCLASS_NUMERIC,
+          $text, $pos, nqp::sub_i(nqp::chars($text),$pos))
+        )
+      )
+    );
 
-    if $residual eq '.' {
-        $pos = $pos + 1;
-
-        $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
-
-        $residual := nqp::substr($text, $pos, 1);
-    }
-
-    if $residual eq 'e' || $residual eq 'E' {
-        $pos = $pos + 1;
-
-        if nqp::eqat($text, '-', $pos) || nqp::eqat($text, '+', $pos) {
-            $pos = $pos + 1;
-        }
-
-        $pos = $pos + 1 while nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos);
-    }
-
-    +(my $result := nqp::substr($text, $startpos - 1, $pos - $startpos + 1)) // die "at $pos: invalid number token $result.perl()";
+    my $result := nqp::substr($text, $start, nqp::sub_i($end,$start)).Numeric;
+    nqp::if(
+      nqp::istype($result, Failure),
+      nqp::stmts(
+        $result.Bool,  # handle Failure
+        (die "at $pos: invalid number token $text.substr($start,$end - $start)")
+      ),
+      nqp::stmts(
+        ($pos = $end),
+        $result
+      )
+    )
 }
 
 my sub parse-obj(str $text, int $pos is rw) {
