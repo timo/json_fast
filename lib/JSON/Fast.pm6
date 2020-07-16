@@ -359,8 +359,15 @@ my Mu $hexdigits := nqp::hash(
     '48', 1, '49', 1, '50', 1, '51', 1, '52', 1, '53', 1, '54', 1, '55', 1, '56', 1, '57', 1,
     '65', 1, '66', 1, '67', 1, '68', 1, '69', 1, '70', 1);
 
-my Mu $escapees := nqp::hash(
-    "34", '"', "47", "/", "92", "\\", "98", "\b", "102", "\f", "110", "\n", "114", "\r", "116", "\t");
+my $escapees := nqp::list;
+nqp::bindpos($escapees,  34, '"');
+nqp::bindpos($escapees,  47, "/");
+nqp::bindpos($escapees,  92, "\\");
+nqp::bindpos($escapees,  98, "\b");
+nqp::bindpos($escapees, 102, "\f");
+nqp::bindpos($escapees, 110, "\n");
+nqp::bindpos($escapees, 114, "\r");
+nqp::bindpos($escapees, 116, "\t");
 
 my sub parse-string(str $text, int $pos is rw) {
     # first we gallop until the end of the string
@@ -420,7 +427,7 @@ my sub parse-string(str $text, int $pos is rw) {
                     }
                 }
                 $has_hexcodes++;
-            } elsif nqp::existskey($escapees, nqp::ordat($text, $pos)) {
+            } elsif nqp::atpos($escapees, nqp::ordat($text, $pos)) {
                 # treacherous!
                 $has_treacherous++;
                 $treacherous := nqp::hash() unless $treacherous;
@@ -499,8 +506,8 @@ my sub parse-string(str $text, int $pos is rw) {
 
                     utf16.new(@hexes).decode ~ $endpiece;
                 } else {
-                    if nqp::existskey($escapees, nqp::ordat($0.Str, 0)) {
-                        my str $replacement = nqp::atkey($escapees, nqp::ordat($0.Str, 0));
+                    if nqp::atpos($escapees, nqp::ordat($0.Str, 0)) {
+                        my str $replacement = nqp::atpos($escapees, nqp::ordat($0.Str, 0));
                         $replacement ~ tear-off-combiners($0.Str, 0);
                     } else {
                         die "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.from }";
