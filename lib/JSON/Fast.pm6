@@ -342,8 +342,8 @@ my sub nom-ws(str $text, int $pos is rw --> Nil) {
       nqp::atpos_i($ws,nqp::ordat($text,$pos)),
       $pos = $pos + 1
     );
-    die "reached end of string when looking for something"
-      if $pos == nqp::chars($text);
+    #die "reached end of string when looking for something"
+      #if $pos == nqp::chars($text);
 }
 
 my sub tear-off-combiners(\text, \pos) {
@@ -626,7 +626,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                 (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
                 (die nqp::if(
                   nqp::iseq_i($pos, nqp::chars($text)),
-                  "at end of string: expected a quoted string for an object key",
+                  "at end of input: expected a quoted string for an object key",
                   "at $pos: json requires object keys to be strings"
                 ))
               ),
@@ -634,7 +634,11 @@ my sub parse-obj(str $text, int $pos is rw) {
               nqp::if(
                 nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
                 ($pos = nqp::add_i($pos, 1)),
-                (die "expected to see a ':' after an object key")
+                (die nqp::if(
+                  nqp::iseq_i($pos, nqp::chars($text)),
+                  "at end of input: expected a ':' after an object key",
+                  "at $pos: expected to see a ':' after an object key, not " ~ nqp::substr($text, $pos, 1).perl
+                ))
               ),
               nom-ws($text, $pos),
               nqp::bindkey($hash, $key,
@@ -651,8 +655,8 @@ my sub parse-obj(str $text, int $pos is rw) {
                   nqp::iseq_i($ordinal, 44),  # ,
                   (die nqp::if(
                     nqp::iseq_i($pos, nqp::chars($text)),
-                    "at end of string: unexpected end of object.",
-                    "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos"
+                    "at end of input: unexpected end of object.",
+                    "unexpected { nqp::substr($text, $pos, 1).perl } in an object at $pos"
                   ))
                 )
               ),
@@ -698,9 +702,13 @@ my sub parse-array(str $text, int $pos is rw) {
                   nqp::push($buffer,nqp::p6scalarwithvalue($descriptor,$thing)),
                   ($pos = nqp::add_i($pos,1))
                 ),
-                (die "at $pos, unexpected partitioner '{
-                    nqp::substr($text,$pos,1)
-                }' inside list of things in an array")
+                nqp::if(
+                    nqp::iseq_i($pos, nqp::chars($text)),
+                    (die "reached the end of input data looking for a comma in an array"),
+                    (die "at $pos, unexpected partitioner '{
+                        nqp::substr($text,$pos,1)
+                    }' inside list of things in an array")
+                )
               )
             )
           )
@@ -739,9 +747,11 @@ my sub parse-thing(str $text, int $pos is rw) {
         Any
     }
     else {
-        die "at $pos: expected a json object, but got '{
+        die nqp::if(nqp::iseq_i($pos, nqp::chars($text)),
+            "at end of input: expected any json object",
+            "at $pos: expected a json object, but got {
           nqp::substr($text, $pos, 8).perl
-        }'";
+        }");
     }
 }
 
