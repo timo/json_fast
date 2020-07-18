@@ -348,14 +348,6 @@ my sub nom-ws(str $text, int $pos is rw --> Nil) {
     )
 }
 
-my sub tear-off-combiners(\text, \pos) {
-    text.substr(pos,1).NFD.skip.map( {
-         $^ord > 0x10000
-           ?? to-surrogate-pair($^ord)
-           !! $^ord.chr
-    } ).join
-}
-
 my $hexdigits := nqp::list;
 nqp::bindpos($hexdigits,  48,  0);  # 0
 nqp::bindpos($hexdigits,  49,  1);  # 1
