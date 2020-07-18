@@ -425,7 +425,7 @@ my sub parse-string-slow(str $text, int $pos is rw) {
         )
       )
     );
-    die "unexpected end of document in string";
+    die "unexpected end of input in string";
 }
 
 # convert a sequence of Uni elements into a string, with the initial
@@ -459,7 +459,7 @@ my sub unjsonify-string(Uni:D \codes, int $pos) {
                 } in \\u sequence at $pos")
               )
             ),
-            (die "incomplete \\u sequence in a string near $pos")
+            (die "incomplete \\u sequence in string near $pos")
           )
         );
 
@@ -593,7 +593,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                 (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
                 (die nqp::if(
                   nqp::iseq_i($pos, nqp::chars($text)),
-                  "at end of string: expected a quoted string for an object key",
+                  "at end of input: expected a quoted string for an object key",
                   "at $pos: json requires object keys to be strings"
                 ))
               ),
@@ -618,7 +618,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                   nqp::iseq_i($ordinal, 44),  # ,
                   (die nqp::if(
                     nqp::iseq_i($pos, nqp::chars($text)),
-                    "at end of string: unexpected end of object.",
+                    "at end of input: unexpected end of object.",
                     "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos"
                   ))
                 )
