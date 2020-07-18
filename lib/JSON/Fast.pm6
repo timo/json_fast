@@ -355,38 +355,38 @@ my sub tear-off-combiners(\text, \pos) {
 }
 
 my $hexdigits := nqp::list;
-nqp::bindpos($hexdigits,  48, 1);  # 0
-nqp::bindpos($hexdigits,  49, 1);  # 1
-nqp::bindpos($hexdigits,  50, 1);  # 2
-nqp::bindpos($hexdigits,  51, 1);  # 3
-nqp::bindpos($hexdigits,  52, 1);  # 4
-nqp::bindpos($hexdigits,  53, 1);  # 5
-nqp::bindpos($hexdigits,  54, 1);  # 6
-nqp::bindpos($hexdigits,  55, 1);  # 7
-nqp::bindpos($hexdigits,  56, 1);  # 8
-nqp::bindpos($hexdigits,  57, 1);  # 9
-nqp::bindpos($hexdigits,  65, 1);  # A
-nqp::bindpos($hexdigits,  66, 1);  # B
-nqp::bindpos($hexdigits,  67, 1);  # C
-nqp::bindpos($hexdigits,  68, 1);  # D
-nqp::bindpos($hexdigits,  69, 1);  # E
-nqp::bindpos($hexdigits,  70, 1);  # F
-nqp::bindpos($hexdigits,  97, 1);  # a
-nqp::bindpos($hexdigits,  98, 1);  # b
-nqp::bindpos($hexdigits,  99, 1);  # c
-nqp::bindpos($hexdigits, 100, 1);  # d
-nqp::bindpos($hexdigits, 101, 1);  # e
-nqp::bindpos($hexdigits, 102, 1);  # f
+nqp::bindpos($hexdigits,  48,  0);  # 0
+nqp::bindpos($hexdigits,  49,  1);  # 1
+nqp::bindpos($hexdigits,  50,  2);  # 2
+nqp::bindpos($hexdigits,  51,  3);  # 3
+nqp::bindpos($hexdigits,  52,  4);  # 4
+nqp::bindpos($hexdigits,  53,  5);  # 5
+nqp::bindpos($hexdigits,  54,  6);  # 6
+nqp::bindpos($hexdigits,  55,  7);  # 7
+nqp::bindpos($hexdigits,  56,  8);  # 8
+nqp::bindpos($hexdigits,  57,  9);  # 9
+nqp::bindpos($hexdigits,  65, 10);  # A
+nqp::bindpos($hexdigits,  66, 11);  # B
+nqp::bindpos($hexdigits,  67, 12);  # C
+nqp::bindpos($hexdigits,  68, 13);  # D
+nqp::bindpos($hexdigits,  69, 14);  # E
+nqp::bindpos($hexdigits,  70, 15);  # F
+nqp::bindpos($hexdigits,  97, 10);  # a
+nqp::bindpos($hexdigits,  98, 11);  # b
+nqp::bindpos($hexdigits,  99, 12);  # c
+nqp::bindpos($hexdigits, 100, 13);  # d
+nqp::bindpos($hexdigits, 101, 14);  # e
+nqp::bindpos($hexdigits, 102, 15);  # f
 
-my $escapees := nqp::list;
-nqp::bindpos($escapees,  34, '"');
-nqp::bindpos($escapees,  47, "/");
-nqp::bindpos($escapees,  92, "\\");
-nqp::bindpos($escapees,  98, "\b");
-nqp::bindpos($escapees, 102, "\f");
-nqp::bindpos($escapees, 110, "\n");
-nqp::bindpos($escapees, 114, "\r");
-nqp::bindpos($escapees, 116, "\t");
+my $escapees := nqp::list_i;
+nqp::bindpos_i($escapees,  34, 34);  # "
+nqp::bindpos_i($escapees,  47, 47);  # /
+nqp::bindpos_i($escapees,  92, 92);  # \
+nqp::bindpos_i($escapees,  98,  8);  # b
+nqp::bindpos_i($escapees, 102, 12);  # f
+nqp::bindpos_i($escapees, 110, 10);  # n
+nqp::bindpos_i($escapees, 114, 13);  # r
+nqp::bindpos_i($escapees, 116,  9);  # t
 
 my sub parse-string(str $text, int $pos is rw) {
     nqp::if(
@@ -404,157 +404,130 @@ my sub parse-string(str $text, int $pos is rw) {
     )
 }
 
+# Slower parsing of string if the string does not exist of 0 or more
+# alphanumeric characters
 my sub parse-string-slow(str $text, int $pos is rw) {
 
-    # first we gallop until the end of the string
-    my int $startpos = $pos;
-    my int $endpos;
-    my int $textlength = nqp::chars($text);
+    my int $start = nqp::sub_i($pos,1);  # include starter in string
+    nqp::until(
+      nqp::iseq_i((my $end := nqp::index($text, '"', $pos)), -1),
+      nqp::stmts(
+        ($pos = $end + 1),
+        (my int $index = 1),
+        nqp::while(
+          nqp::eqat($text, '\\', nqp::sub_i($end, $index)),
+          ($index = nqp::add_i($index, 1))
+        ),
+        nqp::if(
+          nqp::bitand_i($index, 1),
+          (return unjsonify-string(      # preceded by an even number of \
+            nqp::strtocodes(
+              nqp::substr($text, $start, $end - $start),
+              nqp::const::NORMALIZE_NFD,
+              nqp::create(NFD)
+            ),
+            $pos
+          ))
+        )
+      )
+    );
+    die "unexpected end of document in string";
+}
 
-    my int $ord;
-    my int $has_hexcodes;
-    my int $has_treacherous;
-    my str $startcombiner = "";
-    my Mu $treacherous;
-    my Mu $escape_counts := nqp::hash();
+# convert a sequence of Uni elements into a string, with the initial
+# quoter as the first element.
+my sub unjsonify-string(Uni:D \codes, int $pos) {
+    nqp::shift_i(codes);  # lose the " without any decoration
 
-    unless nqp::eqat($text, '"', $startpos - 1) {
-        $startcombiner = tear-off-combiners($text, $startpos - 1);
+    # fetch a single codepoint from the next 4 Uni elements
+    my sub fetch-codepoint() {
+        my int $codepoint = 0;
+        my int $times = 5;
+
+        nqp::while(
+          ($times = nqp::sub_i($times, 1)),
+          nqp::if(
+            nqp::elems(codes),
+            nqp::if(
+              nqp::iseq_i(
+                (my uint32 $ordinal = nqp::shift_i(codes)),
+                48  # 0
+              ),
+              ($codepoint = nqp::mul_i($codepoint, 16)),
+              nqp::if(
+                (my int $adder = nqp::atpos($hexdigits, $ordinal)),
+                ($codepoint = nqp::add_i(
+                  nqp::mul_i($codepoint, 16),
+                  $adder
+                )),
+                (die "invalid hexadecimal char {
+                    nqp::chr($ordinal).perl
+                } in \\u sequence at $pos")
+              )
+            ),
+            (die "incomplete \\u sequence in a string near $pos")
+          )
+        );
+
+        $codepoint
     }
 
-    loop {
-        $ord = nqp::ordat($text, $pos);
-        $pos = $pos + 1;
+    my $output := nqp::create(Uni);
+    nqp::while(
+      nqp::elems(codes),
+      nqp::if(
+        nqp::iseq_i(
+          (my uint32 $ordinal = nqp::shift_i(codes)),
+          92  # \
+        ),
+        nqp::if(                                           # haz an escape
+          nqp::iseq_i(($ordinal = nqp::shift_i(codes)), 117),  # u
+          nqp::stmts(                                      # has a \u escape
+            nqp::if(
+              nqp::isge_i((my int $codepoint = fetch-codepoint), 0xD800)
+                && nqp::islt_i($codepoint, 0xE000),
+              nqp::if(                                     # high surrogate
+                nqp::iseq_i(nqp::atpos_i(codes, 0),  92)        # \
+                  && nqp::iseq_i(nqp::atpos_i(codes, 1), 117),  # u
+                nqp::stmts(                                # low surrogate
+                  nqp::shift_i(codes),  # get rid of \
+                  nqp::shift_i(codes),  # get rid of u
+                  nqp::if(
+                    nqp::isge_i((my int $low = fetch-codepoint), 0xDC00),
+                    ($codepoint = nqp::add_i(              # got low surrogate
+                      nqp::add_i(                          # transmogrify
+                        nqp::mul_i(nqp::sub_i($codepoint, 0xD800), 0x400),
+                        0x10000                            # with
+                      ),                                   # low surrogate
+                      nqp::sub_i($low, 0xDC00)
+                    )),
+                    (die "improper low surrogate \\u$low.base(16) for high surrogate \\u$codepoint.base(16) near $pos")
+                  )
+                ),
+                (die "missing low surrogate for high surrogate \\u$codepoint.base(16) near $pos")
+              )
+            ),
+            nqp::push_i($output, $codepoint)
+          ),
+          nqp::if(                                         # other escapes?
+            ($codepoint = nqp::atpos_i($escapees, $ordinal)),
+            nqp::push_i($output, $codepoint),              # recognized escape
+            (die "unknown escape code found '\\{           # huh?
+                nqp::chr($ordinal)
+            }' found near $pos")
+          )
+        ),
+        nqp::if(                                           # not an escape
+          nqp::iseq_i($ordinal, 9) || nqp::iseq_i($ordinal, 10),  # \t \n
+          (die "this kind of whitespace is not allowed in a string: '{
+              nqp::chr($ordinal).perl
+          }' near $pos"),
+          nqp::push_i($output, $ordinal)                   # ok codepoint
+        )
+      )
+    );
 
-        if $pos > $textlength {
-            die "unexpected end of document in string";
-        }
-
-        if nqp::eqat($text, '"', $pos - 1) {
-            $endpos = $pos - 1;
-            last;
-        } elsif $ord == 92 {
-            if     nqp::eqat($text, '"', $pos) or nqp::eqat($text, '\\', $pos) or nqp::eqat($text, 'b', $pos)
-                or nqp::eqat($text, 'f', $pos) or nqp::eqat($text,  'n', $pos) or nqp::eqat($text, 'r', $pos)
-                or nqp::eqat($text, 't', $pos) or nqp::eqat($text,  '/', $pos) {
-                my str $character = nqp::substr($text, $pos, 1);
-                if nqp::existskey($escape_counts, $character) {
-                    nqp::bindkey($escape_counts, $character, nqp::atkey($escape_counts, $character) + 1);
-                } else {
-                    nqp::bindkey($escape_counts, $character, 1);
-                }
-                $pos = $pos + 1;
-            } elsif nqp::eqat($text, 'u', $pos) {
-                loop {
-                    die "unexpected end of document; was looking for four hexdigits." if $textlength - $pos < 5;
-                    if      nqp::atpos($hexdigits, nqp::ordat($text, $pos + 1))
-                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 2))
-                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 3))
-                        and nqp::atpos($hexdigits, nqp::ordat($text, $pos + 4)) {
-                        $pos = $pos + 4;
-                    } else {
-                        die "expected hexadecimals after \\u, but got \"{ nqp::substr($text, $pos - 1, 6) }\" at $pos";
-                    }
-                    $pos++;
-                    if nqp::eqat($text, '\u', $pos) {
-                        $pos++;
-                    } else {
-                        last
-                    }
-                }
-                $has_hexcodes++;
-            } elsif nqp::atpos($escapees, nqp::ordat($text, $pos)) {
-                # treacherous!
-                $has_treacherous++;
-                $treacherous := nqp::hash() unless $treacherous;
-                my int $treach_ord = nqp::ordat($text, $pos);
-                if nqp::existskey($treacherous, $treach_ord) {
-                    nqp::bindkey($treacherous, $treach_ord, nqp::atkey($treacherous, $treach_ord) + 1)
-                } else {
-                    nqp::bindkey($treacherous, $treach_ord, 1)
-                }
-                $pos++;
-            } else {
-                die "don't understand escape sequence '\\{ nqp::substr($text, $pos, 1) }' at $pos";
-            }
-        } elsif $ord == 9 or $ord == 10 {
-            die "this kind of whitespace is not allowed in a string: { nqp::substr($text, $pos - 1, 1).perl } at {$pos - 1}";
-        }
-    }
-
-    $pos = $pos + 1;
-
-    my str $raw = nqp::substr($text, $startpos, $endpos - $startpos);
-    if $startcombiner {
-        $raw = $startcombiner ~ $raw
-    }
-    if not $has_treacherous and not $has_hexcodes and $escape_counts {
-        my str @a;
-        my str @b;
-        if nqp::existskey($escape_counts, "b") {
-            @a.push("\\b"); @b.push("\b");
-        }
-        if nqp::existskey($escape_counts, "f") {
-            @a.push("\\f"); @b.push("\f");
-        }
-        if nqp::existskey($escape_counts, "n") and nqp::existskey($escape_counts, "r") {
-            @a.push("\\r\\n"); @b.push("\r\n");
-        }
-        if nqp::existskey($escape_counts, "n") {
-            @a.push("\\n"); @b.push("\n");
-        }
-        if nqp::existskey($escape_counts, "r") {
-            @a.push("\\r"); @b.push("\r");
-        }
-        if nqp::existskey($escape_counts, "t") {
-            @a.push("\\t"); @b.push("\t");
-        }
-        if nqp::existskey($escape_counts, '"') {
-            @a.push('\\"'); @b.push('"');
-        }
-        if nqp::existskey($escape_counts, "/") {
-            @a.push("\\/"); @b.push("/");
-        }
-        if nqp::existskey($escape_counts, "\\") {
-            @a.push("\\\\"); @b.push("\\");
-        }
-        $raw .= trans(@a => @b) if @a;
-    } elsif $has_hexcodes or nqp::elems($escape_counts) {
-        $raw = $raw.subst(/ \\ (<-[uU]>) || [\\ (<[uU]>) (<[a..f 0..9 A..F]> ** 3)]+ %(<[a..f 0..9 A..F]>) (:m <[a..f 0..9 A..F]>) /,
-            -> $/ {
-                if $0.elems > 1 || $0.Str eq "u" || $0.Str eq "U" {
-                    my str @caps = $/.caps>>.value>>.Str;
-                    my $result = $/;
-                    my str $endpiece = "";
-                    if (my $lastchar = nqp::chr(nqp::ord(@caps.tail))) ne @caps.tail {
-                        $endpiece = tear-off-combiners(@caps.tail, 0);
-                        @caps.pop;
-                        @caps.push($lastchar);
-                    }
-                    my int @hexes;
-                    for @caps -> $u, $first, $second {
-                        @hexes.push(:16($first ~ $second).self);
-                    }
-
-                    CATCH {
-                        die "Couldn't decode hexadecimal unicode escape { $result.Str } at { $startpos + $result.from }";
-                    }
-
-                    utf16.new(@hexes).decode ~ $endpiece;
-                } else {
-                    if nqp::atpos($escapees, nqp::ordat($0.Str, 0)) {
-                        my str $replacement = nqp::atpos($escapees, nqp::ordat($0.Str, 0));
-                        $replacement ~ tear-off-combiners($0.Str, 0);
-                    } else {
-                        die "stumbled over unexpected escape code \\{ chr(nqp::ordat($0.Str, 0)) } at { $startpos + $/.from }";
-                    }
-                }
-            }, :g);
-    }
-
-    $pos = $pos - 1;
-
-    $raw;
+    nqp::strfromcodes($output)
 }
 
 my sub parse-numeric(str $text, int $pos is rw) {
