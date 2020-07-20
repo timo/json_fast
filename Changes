@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Include lizmat's much faster rewrite of parsing code, about 4.4x as fast
+    - Reword some error messages
 
 0.12  2020-07-08T21:03:47+02:00
     - Make sure object-keyed hashes stringify keys
