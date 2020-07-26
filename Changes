@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Make sure hash keys are escaped again
 
 0.13  2020-07-21T00:28:54+02:00
     - Include lizmat's much faster rewrite of parsing code, about 4.4x as fast

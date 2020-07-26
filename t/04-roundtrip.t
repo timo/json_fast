@@ -24,6 +24,7 @@ my @s =
         'Hash of Int'    => { :one(1), :two(2), :three(3) },
         'Hash of Num'    => { :one-and-some[1], :almost-pie(3.3) },
         'Hash of Str'    => { :one<yes_one>, :two<but_two> },
+        'Hash of weird Str' => { "Hello\"" => "good\bye" },
         'Hash: Int keys' => :{ 1 => 1, 2 => 2, 3 => "hi", 4 => "lol" } => ${ "1" => 1, "2" => 2, "3" => "hi", "4" => "lol" },
         'Array of Stuff' => [ { 'A hash' => 1 }, [<an array again>], 2],
         'Hash of Stuff'  =>
