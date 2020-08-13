@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.15  2020-08-13T18:43:26+02:00
     - When both match, prefer Associative over Positional
 
 0.14  2020-07-26T23:55:00+02:00
