@@ -296,15 +296,15 @@ our sub to-json(
             elsif nqp::istype($_, Seq) {
                 jsonify(.cache);
             }
-            elsif nqp::istype($_, Positional) {
-                $pretty
-                  ?? pretty-positional($_)
-                  !! unpretty-positional($_);
-            }
             elsif nqp::istype($_, Associative) {
                 $pretty
                   ?? pretty-associative($_)
                   !! unpretty-associative($_);
+            }
+            elsif nqp::istype($_, Positional) {
+                $pretty
+                  ?? pretty-positional($_)
+                  !! unpretty-positional($_);
             }
 
             # rarer ones
