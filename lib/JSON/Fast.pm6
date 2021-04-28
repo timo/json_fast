@@ -314,6 +314,9 @@ our sub to-json(
             elsif nqp::istype($_, Instant) {
                 nqp::push_s(@out,qq/"{.DateTime}"/);
             }
+            elsif nqp::istype($_, Real) {
+                jsonify(.Bridge);
+            }
             elsif nqp::istype($_, Version) {
                 jsonify(.Str);
             }
