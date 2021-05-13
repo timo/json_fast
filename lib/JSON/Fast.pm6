@@ -279,6 +279,10 @@ our sub to-json(
                 nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
                   given .Str;
             }
+            elsif nqp::istype($_, Rational) {
+                nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
+                  given .Str;
+            }
             elsif nqp::istype($_, Num) {
                 if nqp::isnanorinf($_) {
                     nqp::push_s(
