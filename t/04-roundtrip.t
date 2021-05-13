@@ -19,6 +19,8 @@ my @s =
         'Int Allomorph'  => [ IntStr.new(0, '') ] => [ 0 ],
         'Rat Allomorph'  => [ RatStr.new(0.0, '') ] => [0.0],
         'Num Allomorph'  => [ NumStr.new(0e0, '') ] => [0e0],
+        'Duration'       => [ Duration.new(57) ] => [ 5.7e1 ],
+        'Rational'       => [ Rational[Int,Int].new(3,10) ] => [ 0.3 ],
         'Empty Hash'     => {},
         'Undef Hash Val' => { key => Any },
         'Hash of Int'    => { :one(1), :two(2), :three(3) },
