@@ -279,6 +279,10 @@ our sub to-json(
                 nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
                   given .Str;
             }
+            elsif nqp::istype($_, Rational) {
+                nqp::push_s(@out,.contains(".") ?? $_ !! "$_.0")
+                  given .Str;
+            }
             elsif nqp::istype($_, Num) {
                 if nqp::isnanorinf($_) {
                     nqp::push_s(
@@ -313,6 +317,9 @@ our sub to-json(
             }
             elsif nqp::istype($_, Instant) {
                 nqp::push_s(@out,qq/"{.DateTime}"/);
+            }
+            elsif nqp::istype($_, Real) {
+                jsonify(.Bridge);
             }
             elsif nqp::istype($_, Version) {
                 jsonify(.Str);
