@@ -1,7 +1,7 @@
 =begin pod
 =head1 JSON::Fast
 
-a naive imperative json parser in pure perl6 (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>’s from-json and to-json subs, but it offers a few extra features.
+A naive imperative JSON parser in pure Raku (but with direct access to C<nqp::> ops), to evaluate performance against C<JSON::Tiny>. It is a drop-in replacement for C<JSON::Tiny>’s from-json and to-json subs, but it offers a few extra features.
 
 Currently it seems to be about 4x faster and uses up about a quarter of the RAM JSON::Tiny would use.
 
@@ -13,15 +13,15 @@ This module also includes a very fast to-json function that tony-o created and l
 
 =for code
     my $*JSON_NAN_INF_SUPPORT = 1; # allow NaN, Inf, and -Inf to be serialized.
-    say to-json [<my Perl data structure>];
-    say to-json [<my Perl data structure>], :!pretty;
-    say to-json [<my Perl data structure>], :spacing(4);
+    say to-json [<my Raku data structure>];
+    say to-json [<my Raku data structure>], :!pretty;
+    say to-json [<my Raku data structure>], :spacing(4);
 
     enum Blerp <Hello Goodbye>;
     say to-json [Hello, Goodbye]; # ["Hello", "Goodbye"]
     say to-json [Hello, Goodbye], :enums-as-value; # [0, 1]
 
-Encode a Perl data structure into JSON. Takes one positional argument, which
+Encode a Raku data structure into JSON. Takes one positional argument, which
 is a thing you want to encode into JSON. Takes these optional named arguments:
 
 =head4 pretty
@@ -47,7 +47,7 @@ be sorted before serializing them to a string or if C<$obj.keys> is good enough.
     # outputs: $["foo", "bar", {:ber("bor")}]
 
 Takes one positional argument that is coerced into a C<Str> type and represents
-a JSON text to decode. Returns a Perl datastructure representing that JSON.
+a JSON text to decode. Returns a Raku datastructure representing that JSON.
 
 =head2 Additional features
 
