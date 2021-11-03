@@ -49,6 +49,13 @@ be sorted before serializing them to a string or if C<$obj.keys> is good enough.
 Takes one positional argument that is coerced into a C<Str> type and represents
 a JSON text to decode. Returns a Raku datastructure representing that JSON.
 
+=head4 immutable
+
+C<Bool>. Defaults to C<False>. Specifies whether C<Hash>es and C<Array>s should be
+rendered as immutable datastructures instead (as C<Map> / C<List>.  Creating an
+immutable data structures is mostly saving on memory usage, and a little bit on
+CPU (typically around 5%).
+
 =head2 Additional features
 
 =head3 Strings containing multiple json pieces
@@ -64,7 +71,7 @@ off of the string and restart parsing from there.
 
 use nqp;
 
-unit module JSON::Fast:ver<0.16>;
+unit module JSON::Fast:ver<0.17>;
 
 our class X::JSON::AdditionalContent is Exception is export {
     has $.parsed;
@@ -99,7 +106,7 @@ my $bs  := nqp::list_i(92, 92); # \\
 sub str-escape(\text) {
     my $codes := text.NFD;
     my int $i = -1;
-    
+
     nqp::while(
       nqp::islt_i(++$i,nqp::elems($codes)),
       nqp::if(
@@ -574,6 +581,34 @@ my sub parse-numeric(str $text, int $pos is rw) {
     )
 }
 
+my sub die-missing-object-key(str $text, int $pos) is hidden-from-backtrace {
+    die $pos == nqp::chars($text)
+      ?? "at end of input: expected a quoted string for an object key"
+      !! "at $pos: json requires object keys to be strings";
+}
+
+my sub die-unexpected-partitioner(str $text, int $pos) is hidden-from-backtrace {
+    die "at $pos, unexpected partitioner '{
+        nqp::substr($text,$pos,1)
+    }' inside list of things in an array";
+}
+
+my sub die-missing-colon(str $text, int $pos) is hidden-from-backtrace {
+    die "expected to see a ':' after an object key at $pos";
+}
+
+my sub die-unexpected-end-of-object(str $text, int $pos) is hidden-from-backtrace {
+    die $pos == nqp::chars($text)
+      ?? "at end of input: unexpected end of object."
+      !! "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos";
+}
+
+my sub die-unexpected-object(str $text, int $pos) is hidden-from-backtrace {
+    die "at $pos: expected a json object, but got '{
+      nqp::substr($text, $pos, 8).perl
+    }'";
+}
+
 my sub parse-obj(str $text, int $pos is rw) {
     my %result;
     my $hash := nqp::ifnull(
@@ -598,17 +633,13 @@ my sub parse-obj(str $text, int $pos is rw) {
               nqp::if(
                 nqp::iseq_i($ordinal, 34),  # "
                 (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
-                (die nqp::if(
-                  nqp::iseq_i($pos, nqp::chars($text)),
-                  "at end of input: expected a quoted string for an object key",
-                  "at $pos: json requires object keys to be strings"
-                ))
+                die-missing-object-key($text, $pos)
               ),
               nom-ws($text, $pos),
               nqp::if(
                 nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
                 ($pos = nqp::add_i($pos, 1)),
-                (die "expected to see a ':' after an object key")
+                die-missing-colon($text, $pos)
               ),
               nom-ws($text, $pos),
               nqp::bindkey($hash, $key,
@@ -623,11 +654,7 @@ my sub parse-obj(str $text, int $pos is rw) {
                 ),
                 nqp::unless(
                   nqp::iseq_i($ordinal, 44),  # ,
-                  (die nqp::if(
-                    nqp::iseq_i($pos, nqp::chars($text)),
-                    "at end of input: unexpected end of object.",
-                    "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos"
-                  ))
+                  die-unexpected-end-of-object($text, $pos)
                 )
               ),
               nom-ws($text, $pos = nqp::add_i($pos,1)),
@@ -672,9 +699,7 @@ my sub parse-array(str $text, int $pos is rw) {
                   nqp::push($buffer,nqp::p6scalarwithvalue($descriptor,$thing)),
                   ($pos = nqp::add_i($pos,1))
                 ),
-                (die "at $pos, unexpected partitioner '{
-                    nqp::substr($text,$pos,1)
-                }' inside list of things in an array")
+                die-unexpected-partitioner($text, $pos)
               )
             )
           )
@@ -683,55 +708,182 @@ my sub parse-array(str $text, int $pos is rw) {
     )
 }
 
+my sub parse-true( int $pos is rw --> True)  { $pos = $pos + 4      }
+my sub parse-false(int $pos is rw --> False) { $pos = $pos + 5      }
+my sub parse-null( int $pos is rw)           { $pos = $pos + 4; Any }
+
 my sub parse-thing(str $text, int $pos is rw) {
     nom-ws($text, $pos);
-
     my int $ordinal = nqp::ordat($text, $pos);
-    if nqp::iseq_i($ordinal,34) {  # "
-        parse-string($text, $pos = $pos + 1)
-    }
-    elsif nqp::iseq_i($ordinal,91) {  # [
-        parse-array($text, $pos = $pos + 1)
-    }
-    elsif nqp::iseq_i($ordinal,123) {  # {
-        parse-obj($text, $pos = $pos + 1)
-    }
-    elsif nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos)
-      || nqp::iseq_i($ordinal,45) {  # -
-        parse-numeric($text, $pos = $pos + 1)
-    }
-    elsif nqp::iseq_i($ordinal,116) && nqp::eqat($text,'true',$pos) {
-        $pos = $pos + 4;
-        True
-    }
-    elsif nqp::iseq_i($ordinal,102) && nqp::eqat($text,'false',$pos) {
-        $pos = $pos + 5;
-        False
-    }
-    elsif nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos) {
-        $pos = $pos + 4;
-        Any
-    }
-    else {
-        die "at $pos: expected a json object, but got '{
-          nqp::substr($text, $pos, 8).perl
-        }'";
-    }
+
+    nqp::iseq_i($ordinal,34)                     # "
+      ?? parse-string($text, $pos = $pos + 1)
+      !! nqp::iseq_i($ordinal,91)                # [
+        ?? parse-array($text, $pos = $pos + 1)
+        !! nqp::iseq_i($ordinal,123)             # {
+          ?? parse-obj($text, $pos = $pos + 1)
+          !! nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos)
+               || nqp::iseq_i($ordinal,45)       # -
+            ?? parse-numeric($text, $pos = $pos + 1)
+            !! nqp::iseq_i($ordinal,116) && nqp::eqat($text,'true',$pos)
+              ?? parse-true($pos)
+              !! nqp::iseq_i($ordinal,102) && nqp::eqat($text,'false',$pos)
+                ?? parse-false($pos)
+                !! nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos)
+                  ?? parse-null($pos)
+                  !! die-unexpected-object($text, $pos)
 }
 
-our sub from-json(Str() $text) is export {
+# Needed so that subroutines can return native hashes without them
+# getting upgraded to Hash.  The equivalent of IterationBuffer but
+# then for Associatives.
+my class IterationMap is repr("VMHash") { }
+
+# Since we create immutable structures, we can have all of the empty
+# hashes and arrays refer to the same empty Map and empty List.
+my $emptyMap  := Map.new;
+my $emptyList := List.new;
+
+my sub hllize-map(\the-map) is raw {
+    nqp::elems(the-map)
+      ?? nqp::p6bindattrinvres(nqp::create(Map),Map,'$!storage',the-map)
+      !! $emptyMap
+}
+
+my sub hllize-list(\the-list) is raw {
+    nqp::elems(the-list)
+      ?? nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',the-list)
+      !! $emptyList
+}
+
+my sub parse-obj-immutable(str $text, int $pos is rw) {
+    my $map := nqp::create(IterationMap);
+
+    nom-ws($text, $pos);
+    my int $ordinal = nqp::ordat($text, $pos);
+    nqp::if(
+      nqp::iseq_i($ordinal, 125),  # }             {
+      nqp::stmts(
+        ($pos = nqp::add_i($pos,1)),
+        hllize-map($map)
+      ),
+      nqp::stmts(  # this level is needed for some reason
+        nqp::while(
+          1,
+          nqp::stmts(
+            nqp::if(
+              nqp::iseq_i($ordinal, 34),  # "
+              (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
+              die-missing-object-key($text, $pos)
+            ),
+            nom-ws($text, $pos),
+            nqp::if(
+              nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
+              ($pos = nqp::add_i($pos, 1)),
+              die-missing-colon($text, $pos)
+            ),
+            nom-ws($text, $pos),
+            nqp::bindkey($map, $key,parse-thing-immutable($text, $pos)),
+            nom-ws($text, $pos),
+            ($ordinal = nqp::ordat($text, $pos)),
+            nqp::if(
+              nqp::iseq_i($ordinal, 125),  # }  {
+              nqp::stmts(
+                ($pos = nqp::add_i($pos,1)),
+                (return hllize-map($map))
+              ),
+              nqp::unless(
+                nqp::iseq_i($ordinal, 44),  # ,
+                die-unexpected-end-of-object($text, $pos)
+              )
+            ),
+            nom-ws($text, $pos = nqp::add_i($pos,1)),
+            ($ordinal = nqp::ordat($text, $pos)),
+          )
+        )
+      )
+    )
+}
+
+my sub parse-array-immutable(str $text, int $pos is rw) {
+    my $list := nqp::create(IterationBuffer);
+
+    nom-ws($text, $pos);
+    nqp::if(
+      nqp::eqat($text, ']', $pos),
+      nqp::stmts(
+        ($pos = nqp::add_i($pos,1)),
+        hllize-list($list)
+      ),
+      nqp::stmts(  # this level is needed for some reason
+        nqp::while(
+          1,
+          nqp::stmts(
+            (my $thing := parse-thing-immutable($text, $pos)),
+            nom-ws($text, $pos),
+            (my int $partitioner = nqp::ordat($text, $pos)),
+            nqp::if(
+              nqp::iseq_i($partitioner,93),  # ]
+              nqp::stmts(
+                nqp::push($list, $thing),
+                ($pos = nqp::add_i($pos,1)),
+                (return hllize-list($list))
+              ),
+              nqp::if(
+                nqp::iseq_i($partitioner,44),  # ,
+                nqp::stmts(
+                  nqp::push($list, $thing),
+                  ($pos = nqp::add_i($pos,1))
+                ),
+                die-unexpected-partitioner($text, $pos)
+              )
+            )
+          )
+        )
+      )
+    )
+}
+
+my sub parse-thing-immutable(str $text, int $pos is rw) {
+    nom-ws($text, $pos);
+    my int $ordinal = nqp::ordat($text, $pos);
+
+    nqp::iseq_i($ordinal,34)                     # "
+      ?? parse-string($text, $pos = $pos + 1)
+      !! nqp::iseq_i($ordinal,91)                # [
+        ?? parse-array-immutable($text, $pos = $pos + 1)
+        !! nqp::iseq_i($ordinal,123)             # {
+          ?? parse-obj-immutable($text, $pos = $pos + 1)
+          !! nqp::iscclass(nqp::const::CCLASS_NUMERIC, $text, $pos)
+               || nqp::iseq_i($ordinal,45)       # -
+            ?? parse-numeric($text, $pos = $pos + 1)
+            !! nqp::iseq_i($ordinal,116) && nqp::eqat($text,'true',$pos)
+              ?? parse-true($pos)
+              !! nqp::iseq_i($ordinal,102) && nqp::eqat($text,'false',$pos)
+                ?? parse-false($pos)
+                !! nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos)
+                  ?? parse-null($pos)
+                  !! die-unexpected-object($text, $pos)
+}
+
+my sub may-die-additional-content($parsed, str $text, int $pos is rw) is hidden-from-backtrace {
+    my int $parsed-length = $pos;
+    try nom-ws($text, $pos);
+
+    X::JSON::AdditionalContent.new(
+      :$parsed, :$parsed-length, rest-position => $pos
+    ).throw unless nqp::iseq_i($pos,nqp::chars($text));
+}
+
+our sub from-json(Str() $text, :$immutable) is export {
     my int $pos;
-    my $parsed := parse-thing($text, $pos);
+    my $parsed := $immutable
+      ?? parse-thing-immutable($text, $pos)
+      !! parse-thing($text, $pos);
 
     # not at the end yet?
-    unless nqp::iseq_i($pos,nqp::chars($text)) {
-        my int $parsed-length = $pos;
-        try nom-ws($text, $pos);
-
-        X::JSON::AdditionalContent.new(
-          :$parsed, :$parsed-length, rest-position => $pos
-        ).throw unless nqp::iseq_i($pos,nqp::chars($text));
-    }
+    may-die-additional-content($parsed, $text, $pos)
+      unless nqp::iseq_i($pos,nqp::chars($text));
 
     $parsed
 }
