@@ -56,6 +56,14 @@ rendered as immutable datastructures instead (as C<Map> / C<List>.  Creating an
 immutable data structures is mostly saving on memory usage, and a little bit on
 CPU (typically around 5%).
 
+This also has the side effect that elements from the returned structure can now
+be iterated over directly because they are not containerized.
+
+=for code
+    my %hash := from-json "META6.json".IO.slurp, :immutable;
+    say "Provides:";
+    .say for %hash<provides>;
+
 =head2 Additional features
 
 =head3 Strings containing multiple json pieces
