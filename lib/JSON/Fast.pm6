@@ -39,6 +39,11 @@ Controls how much spacing there is between each nested level of the output.
 C<Bool>, defaults to C<False>. Specifies whether keys from objects should
 be sorted before serializing them to a string or if C<$obj.keys> is good enough.
 
+=head4 enum-as-value
+
+C<Bool>, defaults to C<False>.  Specifies whether C<enum>s should be json-ified
+as their underlying values, instead of as the name of the C<enum>.
+
 =head3 from-json
 
 =for code
@@ -65,6 +70,24 @@ be iterated over directly because they are not containerized.
     .say for %hash<provides>;
 
 =head2 Additional features
+
+=head3 Adapting defaults of "from-json"
+
+In the C<use> statement, you can add the string C<"immutable"> to make the
+default of the C<immutable> parameter to the C<from-json> subroutine C<True>,
+rather than False.
+
+=for code
+    use JSON::Fast <immutable>;  # create immutable data structures by default
+
+=head3 Adapting defaults of "to-json"
+
+In the C<use> statement, you can add the strings C<"!pretty">,
+C<"sorted-keys"> and/or C<"enums-as-value"> to change the associated
+defaults of the C<to-json> subroutine.
+
+=for code
+    use JSON::FAST <!pretty sorted-keys enums-as-value>;
 
 =head3 Strings containing multiple json pieces
 
@@ -172,7 +195,7 @@ module JSON::Fast:ver<0.17> {
       int  :$spacing        = 2,
       Bool :$sorted-keys    = False,
       Bool :$enums-as-value = False,
-    ) is export {
+    ) {
 
         my str @out;
         my str $spaces = ' ' x $spacing;
@@ -883,7 +906,7 @@ module JSON::Fast:ver<0.17> {
         ).throw unless nqp::iseq_i($pos,nqp::chars($text));
     }
 
-    our sub from-json(Str() $text, :$immutable) is export {
+    our sub from-json(Str() $text, :$immutable) {
         my int $pos;
         my $parsed := $immutable
           ?? parse-thing-immutable($text, $pos)
@@ -895,6 +918,68 @@ module JSON::Fast:ver<0.17> {
 
         $parsed
     }
+}
+
+sub EXPORT(*@_) {
+    my @huh;
+
+    my $from-json-changed;
+    my $immutable-default := False;
+
+    my $to-json-changed;
+    my $pretty-default         := True;
+    my $sorted-keys-default    := False;
+    my $enums-as-value-default := False;
+
+    for @_ {
+        when "immutable" {
+            $immutable-default := True;
+            $from-json-changed := True;
+        }
+        when "!pretty" {
+            $pretty-default  := False;
+            $to-json-changed := True;
+        }
+        when "sorted-keys" {
+            $sorted-keys-default := True;
+            $to-json-changed     := True;
+        }
+        when "enums-as-value" {
+            $enums-as-value-default := True;
+            $to-json-changed        := True;
+        }
+        when "pretty" | "!immutable" | "!sorted-keys" | "!enums-as-value" {
+            # no action, these are the defaults
+        }
+        default {
+            @huh.push: $_;
+        }
+    }
+
+    die "Unrecognized strings in -use- statement: @huh"
+      if @huh;
+
+    my sub from-json-changed(Str() $text,
+      :$immutable = $immutable-default,
+    ) {
+        JSON::Fast::from-json($text, :$immutable)
+    }
+    my sub to-json-changed(\obj,
+      :$pretty         = $pretty-default,
+      :$sorted-keys    = $sorted-keys-default,
+      :$enums-as-value = $enums-as-value-default,
+    ) {
+        JSON::Fast::to-json(obj, :$pretty, :$sorted-keys, :$enums-as-value)
+    }
+
+    Map.new((
+      '&from-json' => $from-json-changed
+        ?? &from-json-changed
+        !! &JSON::Fast::from-json,
+      '&to-json' => $to-json-changed
+        ?? &to-json-changed
+        !! &JSON::Fast::to-json,
+    ))
 }
 
 # vi:syntax=perl6
