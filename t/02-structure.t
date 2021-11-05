@@ -59,12 +59,28 @@ my @t =
     }
 },
 ;
-plan +@t;
+plan @t + @t;
+
+sub decontainerize(\obj) is raw {
+    if obj ~~ Positional {
+        @(obj).map({ decontainerize($_) }).List
+    }
+    elsif obj ~~ Associative {
+        Map.new( @(obj).map({ .key => decontainerize(.value) }) )
+    }
+    else {
+        obj<>
+    }
+}
 
 for @t -> $p {
-    my $s = try from-json($p.key);
+    my $s := try from-json($p.key);
     is-deeply $s, $p.value,
-        "Correct data structure for «{$p.key.subst(/\n/, '\n', :g)}»";
+      "Correct data structure for «{$p.key.subst(/\n/, '\n', :g)}»";
+
+    $s := try from-json($p.key, :immutable);
+    is-deeply $s, decontainerize($p.value),
+      "Correct data structure for «{$p.key.subst(/\n/, '\n', :g)}»";
 }
 
 # vim: ft=perl6

@@ -478,10 +478,10 @@ my Str @n-todo =
     Q«[[]   ]»,
 ;
 
-plan (+@t) + (+@n) + (+@n-todo);
+plan 2 * (@t + @n + @n-todo);
 
 my Int $i = 0;
-sub run-tests(Str @tests, Bool $ok, Bool $todo) {
+sub run-tests(Str @tests, Bool :$ok, Bool :$todo, Bool :$immutable) {
     for @tests -> $t {
         my Str $desc = $t;
         $desc .= subst: /\n.*$/, "\\n...[$i]" if $desc ~~ m/\n/;
@@ -505,8 +505,10 @@ sub run-tests(Str @tests, Bool $ok, Bool $todo) {
     }
 }
 
-run-tests(@t, True, False);
-run-tests(@n, False, False);
-run-tests(@n-todo, False, True);
+for False, True -> $immutable {
+    run-tests(@t,      :$immutable, :ok);
+    run-tests(@n,      :$immutable);
+    run-tests(@n-todo, :$immutable, :todo);
+}
 
 # vim: ft=perl6 shiftwidth=4 expandtab
