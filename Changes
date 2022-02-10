@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.17  2022-02-10T18:40:34+01:00
     - Add :immutable parameter to "from-json"
     - Document :enums-as-value parameter to "to-json"
     - Allow for changing default values in use statement
