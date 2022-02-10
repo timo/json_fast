@@ -1,6 +1,6 @@
 {
-  "auth" : null,
-  "authors" : [
+  "auth": "cpan:TIMOTIMO",
+  "authors": [
     "Timo Paulssen",
     "Tony O'Dell",
     "Wenzel P. P. Peppmeyer",
