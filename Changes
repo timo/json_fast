@@ -1,6 +1,9 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Add :immutable parameter to "from-json"
+    - Document :enums-as-value parameter to "to-json"
+    - Allow for changing default values in use statement
 
 0.16  2021-05-29T23:57:47+02:00
     - Jsonify FatRat objects as floating point numbers
