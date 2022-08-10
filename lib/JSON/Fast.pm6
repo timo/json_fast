@@ -956,7 +956,7 @@ sub EXPORT(*@_) {
         }
     }
 
-    die "Unrecognized strings in -use- statement: @huh"
+    die "Unrecognized strings in -use- statement: @huh[]"
       if @huh;
 
     my sub from-json-changed(Str() $text,
