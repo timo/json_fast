@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Allow Callable with :sorted-keys argument
 
 0.18  2023-04-30T21:48:05+02:00
     - Add support for JSONC (aka JSON with C-style comments)
