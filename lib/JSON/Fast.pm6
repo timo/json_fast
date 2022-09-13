@@ -36,8 +36,10 @@ Controls how much spacing there is between each nested level of the output.
 
 =head4 sorted-keys
 
-C<Bool>, defaults to C<False>. Specifies whether keys from objects should
-be sorted before serializing them to a string or if C<$obj.keys> is good enough.
+Specifies whether keys from objects should be sorted before serializing them
+to a string or if C<$obj.keys> is good enough.  Defaults to C<False>.  Can
+also be specified as a C<Callable> with the same type of argument that the
+C<.sort> method accepts to provide alternate sorting methods.
 
 =head4 enum-as-value
 
@@ -112,7 +114,7 @@ our class X::JSON::AdditionalContent is Exception is export {
     }
 }
 
-module JSON::Fast:ver<0.17> {
+module JSON::Fast:ver<0.18> {
 
     multi sub to-surrogate-pair(Int $ord) {
         my int $base   = $ord - 0x10000;
@@ -193,7 +195,7 @@ module JSON::Fast:ver<0.17> {
       Bool :$pretty         = True,
       Int  :$level          = 0,
       int  :$spacing        = 2,
-      Bool :$sorted-keys    = False,
+           :$sorted-keys    = False,
       Bool :$enums-as-value = False,
     ) {
 
@@ -224,7 +226,7 @@ module JSON::Fast:ver<0.17> {
             nqp::push_s(@out,'{');
             nqp::push_s(@out,nqp::substr($comma,1));
             my \pairs := $sorted-keys
-              ?? associative.sort(*.key)
+              ?? associative.sort($sorted-keys<> =:= True ?? *.key !! $sorted-keys)
               !! associative.list;
 
             for pairs {
