@@ -263,7 +263,7 @@ module JSON::Fast:ver<0.18> {
         sub unpretty-associative(\associative --> Nil) {
             nqp::push_s(@out,'{');
             my \pairs := $sorted-keys
-              ?? associative.sort(*.key)
+              ?? associative.sort($sorted-keys<> =:= True ?? *.key !! $sorted-keys)
               !! associative.list;
 
             my int $before = nqp::elems(@out);
