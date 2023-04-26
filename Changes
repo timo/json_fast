@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Add support for JSONC (aka JSON with C-style comments)
 
 0.17  2022-02-10T18:40:34+01:00
     - Add :immutable parameter to "from-json"
