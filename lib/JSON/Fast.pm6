@@ -118,7 +118,7 @@ our class X::JSON::AdditionalContent is Exception is export {
     }
 }
 
-module JSON::Fast:ver<0.17> {
+module JSON::Fast:ver<0.18> {
 
     multi sub to-surrogate-pair(Int $ord) {
         my int $base   = $ord - 0x10000;
