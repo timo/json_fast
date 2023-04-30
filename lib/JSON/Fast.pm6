@@ -7,8 +7,6 @@ Currently it seems to be about 4x faster and uses up about a quarter of the RAM 
 
 This module also includes a very fast to-json function that tony-o created and lizmat later completely refactored.
 
-And now also supports L<JSONC|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>.
-
 =head2 Exported subroutines
 
 =head3 to-json
@@ -65,6 +63,12 @@ CPU (typically around 5%).
 
 This also has the side effect that elements from the returned structure can now
 be iterated over directly because they are not containerized.
+
+=head4 allow-jsonc
+
+C<BOOL>.  Defaults to C<False>.  Specifies whether commmands adhering to the
+L<JSONC standard|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>
+are allowed.
 
 =for code
     my %hash := from-json "META6.json".IO.slurp, :immutable;
@@ -400,6 +404,11 @@ module JSON::Fast:ver<0.17> {
     }
 
     my sub nom-comment(str $text, int $pos is rw --> Nil) {
+        unless $*ALLOW-JSONC {
+            --$pos;  # un-eat the /
+            return;
+        }
+
         my int $ord;
         nqp::if(
           nqp::iseq_i(($ord = nqp::ordat($text,$pos)),47),          # /
@@ -955,8 +964,9 @@ module JSON::Fast:ver<0.17> {
         ).throw unless nqp::iseq_i($pos,nqp::chars($text));
     }
 
-    our sub from-json(Str() $text, :$immutable) {
+    our sub from-json(Str() $text, :$immutable, :$allow-jsonc) {
         my int $pos;
+        my $*ALLOW-JSONC := $allow-jsonc;
         my $parsed := $immutable
           ?? parse-thing-immutable($text, $pos)
           !! parse-thing($text, $pos);

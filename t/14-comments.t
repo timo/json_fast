@@ -19,6 +19,6 @@ my $json := Q:to/JSON/;
 }
 JSON
 
-is-deeply from-json($json),
+is-deeply from-json($json, :allow-jsonc),
   {:array($[1, 2, 3]), :foo("bar foo"), :number(42), :true(Bool::False)},
   'did it parse ok, despite comments';
