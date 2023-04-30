@@ -3,7 +3,7 @@ use Test;
 plan 8;
 
 my @array   = 1,2,3;
-my $string := @array.raku.subst(" ", :global);
+my $string := @array.raku.subst(" ", "", :global);
 my $list   := @array.List;
 
 {
