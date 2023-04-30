@@ -7,8 +7,6 @@ Currently it seems to be about 4x faster and uses up about a quarter of the RAM 
 
 This module also includes a very fast to-json function that tony-o created and lizmat later completely refactored.
 
-And now also supports L<JSONC|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>.
-
 =head2 Exported subroutines
 
 =head3 to-json
@@ -65,6 +63,12 @@ CPU (typically around 5%).
 
 This also has the side effect that elements from the returned structure can now
 be iterated over directly because they are not containerized.
+
+=head4 allow-jsonc
+
+C<BOOL>.  Defaults to C<False>.  Specifies whether commmands adhering to the
+L<JSONC standard|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>
+are allowed.
 
 =for code
     my %hash := from-json "META6.json".IO.slurp, :immutable;
@@ -400,30 +404,45 @@ module JSON::Fast:ver<0.17> {
     }
 
     my sub nom-comment(str $text, int $pos is rw --> Nil) {
-        my int $ordinal = nqp::ordat($text, $pos);
+        unless $*ALLOW-JSONC {
+            --$pos;  # un-eat the /
+            return;
+        }
+
+        my int $ord;
         nqp::if(
-          nqp::iseq_i(nqp::ordat($text,$pos),47),           # /
+          nqp::iseq_i(($ord = nqp::ordat($text,$pos)),47),          # /
           nqp::stmts(
             nqp::while(  # eating a // style comment
-              nqp::isne_i(nqp::ordat($text,++$pos),10),       # not \n
+              nqp::isne_i(($ord = nqp::ordat($text,++$pos)),10)     # not \n
+                && nqp::isne_i($ord,-1),                            # not eos
               nqp::null
             ),
-            nom-ws($text, ++$pos)
+            nom-ws($text, $ord == -1 ?? $pos !! ++$pos)
           ),
           nqp::if(
-            nqp::iseq_i(nqp::ordat($text,$pos),42),           # *
+            nqp::iseq_i($ord,42),                                   # *
             nqp::stmts(
               nqp::until(  # eating a /*  */ style comment
-                nqp::iseq_i(nqp::ordat($text,++$pos),47)      # /
-                  && nqp::iseq_i(
-                       nqp::ordat($text,nqp::sub_i($pos,1)),  # *
-                       42
-                     ),
+                nqp::iseq_i(($ord = nqp::ordat($text,++$pos)),-1)   # eos
+                  || (nqp::iseq_i($ord,47)                          # /
+                        && nqp::iseq_i(
+                             nqp::ordat($text,nqp::sub_i($pos,1)),
+                             42                                     # *
+                           )),
                 nqp::null
               ),
-              nom-ws($text, ++$pos)
+              nqp::if(
+                nqp::iseq_i($ord,-1),
+                die-end-in-comment($text,$pos),
+                nom-ws($text, ++$pos)
+              )
             ),
-            die-unexpected-object($text, $pos)
+            nqp::if(
+              nqp::iseq_i($ord,-1),
+              die-end-in-comment($text,$pos),
+              die-unexpected-object($text, $pos)
+            )
           )
         );
     }
@@ -645,6 +664,10 @@ module JSON::Fast:ver<0.17> {
             $result
           )
         )
+    }
+
+    my sub die-end-in-comment(str $text, int $pos) is hidden-from-backtrace {
+        die "reached end of input inside comment";
     }
 
     my sub die-missing-object-key(str $text, int $pos) is hidden-from-backtrace {
@@ -941,8 +964,9 @@ module JSON::Fast:ver<0.17> {
         ).throw unless nqp::iseq_i($pos,nqp::chars($text));
     }
 
-    our sub from-json(Str() $text, :$immutable) {
+    our sub from-json(Str() $text, :$immutable, :$allow-jsonc) {
         my int $pos;
+        my $*ALLOW-JSONC := $allow-jsonc;
         my $parsed := $immutable
           ?? parse-thing-immutable($text, $pos)
           !! parse-thing($text, $pos);
