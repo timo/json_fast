@@ -400,30 +400,40 @@ module JSON::Fast:ver<0.17> {
     }
 
     my sub nom-comment(str $text, int $pos is rw --> Nil) {
-        my int $ordinal = nqp::ordat($text, $pos);
+        my int $ord;
         nqp::if(
-          nqp::iseq_i(nqp::ordat($text,$pos),47),           # /
+          nqp::iseq_i(($ord = nqp::ordat($text,$pos)),47),          # /
           nqp::stmts(
             nqp::while(  # eating a // style comment
-              nqp::isne_i(nqp::ordat($text,++$pos),10),       # not \n
+              nqp::isne_i(($ord = nqp::ordat($text,++$pos)),10)     # not \n
+                && nqp::isne_i($ord,-1),                            # not eos
               nqp::null
             ),
-            nom-ws($text, ++$pos)
+            nom-ws($text, $ord == -1 ?? $pos !! ++$pos)
           ),
           nqp::if(
-            nqp::iseq_i(nqp::ordat($text,$pos),42),           # *
+            nqp::iseq_i($ord,42),                                   # *
             nqp::stmts(
               nqp::until(  # eating a /*  */ style comment
-                nqp::iseq_i(nqp::ordat($text,++$pos),47)      # /
-                  && nqp::iseq_i(
-                       nqp::ordat($text,nqp::sub_i($pos,1)),  # *
-                       42
-                     ),
+                nqp::iseq_i(($ord = nqp::ordat($text,++$pos)),-1)   # eos
+                  || (nqp::iseq_i($ord,47)                          # /
+                        && nqp::iseq_i(
+                             nqp::ordat($text,nqp::sub_i($pos,1)),
+                             42                                     # *
+                           )),
                 nqp::null
               ),
-              nom-ws($text, ++$pos)
+              nqp::if(
+                nqp::iseq_i($ord,-1),
+                die-end-in-comment($text,$pos),
+                nom-ws($text, ++$pos)
+              )
             ),
-            die-unexpected-object($text, $pos)
+            nqp::if(
+              nqp::iseq_i($ord,-1),
+              die-end-in-comment($text,$pos),
+              die-unexpected-object($text, $pos)
+            )
           )
         );
     }
@@ -645,6 +655,10 @@ module JSON::Fast:ver<0.17> {
             $result
           )
         )
+    }
+
+    my sub die-end-in-comment(str $text, int $pos) is hidden-from-backtrace {
+        die "reached end of input inside comment";
     }
 
     my sub die-missing-object-key(str $text, int $pos) is hidden-from-backtrace {
