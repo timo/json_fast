@@ -55,13 +55,13 @@ Takes one positional argument that is coerced into a `Str` type and represents a
 
 This also has the side effect that elements from the returned structure can now be iterated over directly because they are not containerized.
 
-#### allow-jsonc
-
-`BOOL`. Defaults to `False`. Specifies whether commmands adhering to the [JSONC standard](https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR) are allowed.
-
         my %hash := from-json "META6.json".IO.slurp, :immutable;
         say "Provides:";
         .say for %hash<provides>;
+
+#### allow-jsonc
+
+`Bool`. Defaults to `False`. Specifies whether commmands adhering to the [JSONC standard](https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR) are allowed.
 
 Additional features
 -------------------
