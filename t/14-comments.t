@@ -15,7 +15,7 @@ my $json := Q:to/JSON/;
   // "object": {
   //   "test": "done"
   // },
-  "array": [1, 2, 3]
+  "array": [1, 2, /* 4, */ 3]
 }
 JSON
 
