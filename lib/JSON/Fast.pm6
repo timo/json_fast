@@ -66,16 +66,16 @@ CPU (typically around 5%).
 This also has the side effect that elements from the returned structure can now
 be iterated over directly because they are not containerized.
 
-=head4 allow-jsonc
-
-C<BOOL>.  Defaults to C<False>.  Specifies whether commmands adhering to the
-L<JSONC standard|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>
-are allowed.
-
 =for code
     my %hash := from-json "META6.json".IO.slurp, :immutable;
     say "Provides:";
     .say for %hash<provides>;
+
+=head4 allow-jsonc
+
+C<Bool>.  Defaults to C<False>.  Specifies whether commmands adhering to the
+L<JSONC standard|https://changelog.com/news/jsonc-is-a-superset-of-json-which-supports-comments-6LwR>
+are allowed.
 
 =head2 Additional features
 
