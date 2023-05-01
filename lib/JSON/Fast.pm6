@@ -46,6 +46,23 @@ C<.sort> method accepts to provide alternate sorting methods.
 C<Bool>, defaults to C<False>.  Specifies whether C<enum>s should be json-ified
 as their underlying values, instead of as the name of the C<enum>.
 
+=head4 converter
+
+C<Callable>, defaults to undefined Callable.  Whenever to-json encounters a type
+it doesn't know how to serialize, JSON::Fast will call .^cando on this callable
+with the value in question, and if one or more candidates are returned, the first
+candidate will be called with the value, and the result will be passed into the
+jsonify sub again, so you should return a value that is "more digestible",
+especially to prevent infinite recursion.
+
+The recommended way to use the converter feature is to pass a multi sub.
+
+An easy default for converters is *.Str that will stringify anything if possible,
+or *.raku which will often get you more detail out of objects.
+
+JSON::Fast will not attempt to call the converter before going through all its
+built-in types.
+
 =head3 from-json
 
 =for code
@@ -197,13 +214,13 @@ module JSON::Fast:ver<0.19> {
     }
 
     our sub to-json(
-      \obj,
-      Bool :$pretty         = True,
-      Int  :$level          = 0,
-      int  :$spacing        = 2,
-           :$sorted-keys    = False,
-      Bool :$enums-as-value = False,
-    ) {
+            \obj,
+            Bool :$pretty         = True,
+            Int  :$level          = 0,
+            int  :$spacing        = 2,
+            :$sorted-keys         = False,
+            Bool :$enums-as-value = False,
+            Callable :$converter) {
 
         my str @out;
         my str $spaces = ' ' x $spacing;
@@ -371,9 +388,18 @@ module JSON::Fast:ver<0.19> {
                     jsonify(.Str);
                 }
 
+                elsif $converter && $converter.cando(\($_)) -> @candidates {
+                    jsonify(@candidates[0]($_));
+                }
+
                 # huh, what?
                 else {
-                    die "Don't know how to jsonify {.^name}";
+                    if $converter {
+                        die "Don't know how to jsonify {.^name} (and provided converter $converter.gist() does not accept it)";
+                    }
+                    else {
+                        die "Don't know how to jsonify {.^name}";
+                    }
                 }
             }
             else {
@@ -1029,8 +1055,9 @@ sub EXPORT(*@_) {
       :$pretty         = $pretty-default,
       :$sorted-keys    = $sorted-keys-default,
       :$enums-as-value = $enums-as-value-default,
+                           Callable :$converter
     ) {
-        JSON::Fast::to-json(obj, :$pretty, :$sorted-keys, :$enums-as-value)
+        JSON::Fast::to-json(obj, :$pretty, :$sorted-keys, :$enums-as-value, :$converter)
     }
 
     Map.new((
