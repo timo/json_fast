@@ -41,6 +41,16 @@ Specifies whether keys from objects should be sorted before serializing them to 
 
 `Bool`, defaults to `False`. Specifies whether `enum`s should be json-ified as their underlying values, instead of as the name of the `enum`.
 
+#### converter
+
+`Callable`, defaults to undefined Callable. Whenever to-json encounters a type it doesn't know how to serialize, JSON::Fast will call .^cando on this callable with the value in question, and if one or more candidates are returned, the first candidate will be called with the value, and the result will be passed into the jsonify sub again, so you should return a value that is "more digestible", especially to prevent infinite recursion.
+
+The recommended way to use the converter feature is to pass a multi sub.
+
+An easy default for converters is *.Str that will stringify anything if possible, or *.raku which will often get you more detail out of objects.
+
+JSON::Fast will not attempt to call the converter before going through all its built-in types.
+
 ### from-json
 
         my $x = from-json '["foo", "bar", {"ber": "bor"}]';
