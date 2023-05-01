@@ -9,6 +9,37 @@ Currently it seems to be about 4x faster and uses up about a quarter of the RAM 
 
 This module also includes a very fast to-json function that tony-o created and lizmat later completely refactored.
 
+SYNOPSIS
+--------
+
+        use JSON::Fast;
+        my $storage-path = $*SPEC.tmpdir.child("json-fast-example-$*PID.json");
+        say "using path $storage-path for example";
+        for <recreatable monascidian spectrograph bardiest ayins sufi lavanga Dachia> -> $word {
+            say "- loading json file";
+            my $current-data = from-json ($storage-path.IO.slurp // "\{}");
+            # $current-data now contains a Hash object populated with what was in the file
+            # (or an empty hash in the very first step when the file didn't exsit yet)
+
+            say "- adding entry for $word";
+            $current-data{$word}{"length"} = $word.chars;
+            $current-data{$word}{"first letter"} = $word.substr(0,1);
+
+            say "- saving json file";
+            $storage-path.IO.spurt(to-json $current-data);
+            # to-json gives us a regular string, so we can plop that
+            # into the file with the spurt method
+
+            say "json file is now $storage-path.IO.s() bytes big";
+            say "===";
+        }
+        say "here is the entire contents of the json file:";
+        say "====";
+        say $storage-path.IO.slurp();
+        say "====";
+        say "deleting storage file ...";
+        $storage-path.IO.unlink;
+
 Exported subroutines
 --------------------
 
@@ -19,9 +50,9 @@ Exported subroutines
         say to-json [<my Raku data structure>], :!pretty;
         say to-json [<my Raku data structure>], :spacing(4);
 
-    enum Blerp <Hello Goodbye>;
-    say to-json [Hello, Goodbye]; # ["Hello", "Goodbye"]
-    say to-json [Hello, Goodbye], :enums-as-value; # [0, 1]
+        enum Blerp <Hello Goodbye>;
+        say to-json [Hello, Goodbye]; # ["Hello", "Goodbye"]
+        say to-json [Hello, Goodbye], :enums-as-value; # [0, 1]
 
 Encode a Raku data structure into JSON. Takes one positional argument, which is a thing you want to encode into JSON. Takes these optional named arguments:
 
