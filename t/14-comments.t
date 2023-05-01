@@ -1,7 +1,7 @@
 use JSON::Fast;
 use Test;
 
-plan 1;
+plan 2;
 
 my $json := Q:to/JSON/;
 {
@@ -15,10 +15,12 @@ my $json := Q:to/JSON/;
   // "object": {
   //   "test": "done"
   // },
-  "array": [1, 2, 3]
+  "array": [1, 2, /* 4, */ 3]
 }
 JSON
 
 is-deeply from-json($json, :allow-jsonc),
   {:array($[1, 2, 3]), :foo("bar foo"), :number(42), :true(Bool::False)},
   'did it parse ok, despite comments';
+
+dies-ok {from-json($json)}, "comments fail to parse in normal path";;
