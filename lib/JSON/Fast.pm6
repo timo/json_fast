@@ -60,7 +60,7 @@ is a thing you want to encode into JSON. Takes these optional named arguments:
 =head4 pretty
 
 C<Bool>. Defaults to C<True>. Specifies whether the output should be "pretty",
-human-readable JSON. When set to false, will output json in a single line.
+human-readable JSON. When set to C<False>, will output json in a single line.
 
 =head4 spacing
 
@@ -116,7 +116,7 @@ are allowed.
 
 In the C<use> statement, you can add the string C<"immutable"> to make the
 default of the C<immutable> parameter to the C<from-json> subroutine C<True>,
-rather than False.
+rather than C<False>.
 
 =for code
     use JSON::Fast <immutable>;  # create immutable data structures by default

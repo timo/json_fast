@@ -58,7 +58,7 @@ Encode a Raku data structure into JSON. Takes one positional argument, which is 
 
 #### pretty
 
-`Bool`. Defaults to `True`. Specifies whether the output should be "pretty", human-readable JSON. When set to false, will output json in a single line.
+`Bool`. Defaults to `True`. Specifies whether the output should be "pretty", human-readable JSON. When set to `False`, will output json in a single line.
 
 #### spacing
 
@@ -99,7 +99,7 @@ Additional features
 
 ### Adapting defaults of "from-json"
 
-In the `use` statement, you can add the string `"immutable"` to make the default of the `immutable` parameter to the `from-json` subroutine `True`, rather than False.
+In the `use` statement, you can add the string `"immutable"` to make the default of the `immutable` parameter to the `from-json` subroutine `True`, rather than `False`.
 
         use JSON::Fast <immutable>;  # create immutable data structures by default
 
