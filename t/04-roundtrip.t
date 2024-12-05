@@ -1,6 +1,5 @@
 #!/usr/bin/env perl6
 use Test;
-use lib 'lib';
 use JSON::Fast;
 
 my @s =
