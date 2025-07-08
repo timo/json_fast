@@ -72,7 +72,8 @@ Controls how much spacing there is between each nested level of the output.
 Specifies whether keys from objects should be sorted before serializing them
 to a string or if C<$obj.keys> is good enough.  Defaults to C<False>.  Can
 also be specified as a C<Callable> with the same type of argument that the
-C<.sort> method accepts to provide alternate sorting methods.
+C<.sort> method accepts to provide alternate sorting methods, or as a C<List>
+of keys indicating the order in which they should be serialized.
 
 =head4 enum-as-value
 
@@ -264,9 +265,13 @@ module JSON::Fast:ver<0.19> {
             $comma = nqp::concat($comma,$spaces);
             nqp::push_s(@out,'{');
             nqp::push_s(@out,nqp::substr($comma,1));
-            my \pairs := $sorted-keys
-              ?? associative.sort($sorted-keys<> =:= True ?? *.key !! $sorted-keys)
-              !! associative.list;
+            my \pairs := $sorted-keys ~~ Positional
+              ?? $sorted-keys.map({ Pair.new($_, associative.AT-KEY($_)) })
+              !! $sorted-keys
+                ?? associative.sort(
+                     $sorted-keys<> =:= True ?? *.key !! $sorted-keys
+                   )
+                !! associative.list;
 
             for pairs {
                 nqp::push_s(@out,'"');

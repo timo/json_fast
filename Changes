@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Allow List with :sorted-keys argument
 
 0.19  2023-04-30T22:38:25+02:00
     - Allow Callable with :sorted-keys argument
