@@ -66,7 +66,7 @@ Encode a Raku data structure into JSON. Takes one positional argument, which is 
 
 #### sorted-keys
 
-Specifies whether keys from objects should be sorted before serializing them to a string or if `$obj.keys` is good enough. Defaults to `False`. Can also be specified as a `Callable` with the same type of argument that the `.sort` method accepts to provide alternate sorting methods, or as a `List` of keys indicating the order in which they should be serialized.
+Specifies whether keys from objects should be sorted before serializing them to a string or if `$obj.keys` is good enough. Defaults to `False`. Can also be specified as a `Callable` with the same type of argument that the `.sort` method accepts to provide alternate sorting methods.
 
 #### enum-as-value
 
