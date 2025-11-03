@@ -487,7 +487,7 @@ sub run-tests(Str @tests, Bool :$ok, Bool :$todo, Bool :$immutable) {
         $desc .= subst: /\n.*$/, "\\n...[$i]" if $desc ~~ m/\n/;
         my Bool $parsed = False;
         try {
-            from-json($t);
+            from-json($t, :$immutable);
             $parsed = True;
             CATCH { default { &diag } }
         }
