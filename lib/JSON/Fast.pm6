@@ -458,6 +458,7 @@ module JSON::Fast:ver<0.19> {
           nqp::if(
             nqp::iseq_i($ord,42),                                   # *
             nqp::stmts(
+              ++$pos,
               nqp::until(  # eating a /*  */ style comment
                 nqp::iseq_i(($ord = nqp::ordat($text,++$pos)),-1)   # eos
                   || (nqp::iseq_i($ord,47)                          # /

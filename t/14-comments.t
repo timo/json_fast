@@ -1,7 +1,7 @@
 use JSON::Fast;
 use Test;
 
-plan 2;
+plan 3;
 
 my $json := Q:to/JSON/;
 {
@@ -24,3 +24,12 @@ is-deeply from-json($json, :allow-jsonc),
   'did it parse ok, despite comments';
 
 dies-ok {from-json($json)}, "comments fail to parse in normal path";;
+
+my $broken-comment := Q:to/JSON/;
+{
+    "this is not a valid comment:":
+        /*/ 123
+}
+JSON
+
+dies-ok { from-json($broken-comment, :allow-jsonc) }, '/*/ is not a valid full comment';
