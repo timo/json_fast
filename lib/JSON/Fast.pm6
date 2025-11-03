@@ -444,6 +444,8 @@ module JSON::Fast:ver<0.19> {
             return;
         }
 
+        my int $startpos = $pos;
+
         my int $ord;
         nqp::if(
           nqp::iseq_i(($ord = nqp::ordat($text,$pos)),47),          # /
@@ -470,14 +472,14 @@ module JSON::Fast:ver<0.19> {
               ),
               nqp::if(
                 nqp::iseq_i($ord,-1),
-                die-end-in-comment($text,$pos),
+                die-end-in-comment($text,$pos,$startpos),
                 nom-ws($text, ++$pos)
               )
             ),
             nqp::if(
               nqp::iseq_i($ord,-1),
-              die-end-in-comment($text,$pos),
-              die-unexpected-object($text, $pos)
+              die-end-in-comment($text,$pos,$startpos),
+              die-expected-object($text,$pos,$startpos)
             )
           )
         );
@@ -516,6 +518,26 @@ module JSON::Fast:ver<0.19> {
     nqp::bindpos_i($escapees, 110, 10);  # n
     nqp::bindpos_i($escapees, 114, 13);  # r
     nqp::bindpos_i($escapees, 116,  9);  # t
+
+    my constant CONTEXT-LENGTH = 5;
+    my sub context-for-error-report(str $text, int $pos, int $startpos = -1) {
+        my int $start-of-context = 0 max $pos - CONTEXT-LENGTH;
+        my str $prematch = nqp::substr($text, $start-of-context, $pos - $start-of-context);
+        my str $postmatch = nqp::substr($text, $pos, CONTEXT-LENGTH);
+        my int $has-postmatch = nqp::chars($postmatch) > 1;
+        "Context: "
+          ~ (($start-of-context == 0 ?? "<BOS>" !! "")
+            ~ $prematch).raku().substr(1,*-1)
+          ~ "→"
+          ~ ($has-postmatch
+              ?? $postmatch.substr(0,1).raku.substr(1,*-1) ~ "←"
+              !! "")
+          ~ ($postmatch
+            ~ (nqp::chars($postmatch) < CONTEXT-LENGTH ?? "<EOS>" !! "")).raku.substr($has-postmatch ?? 2 !! 1,*-1)
+          ~ ($startpos != -1
+              ?? " (corresponding start " ~ ($pos - $startpos) ~ " characters earlier, at $startpos)"
+              !! "");
+    }
 
     my sub parse-string(str $text, int $pos is rw) {
         nqp::if(
@@ -560,7 +582,7 @@ module JSON::Fast:ver<0.19> {
             )
           )
         );
-        die "unexpected end of input in string";
+        die "unexpected end of input in string\n" ~ context-for-error-report($text, $pos, $start);
     }
 
 # convert a sequence of Uni elements into a string, with the initial
@@ -693,7 +715,7 @@ module JSON::Fast:ver<0.19> {
           nqp::istype($result, Failure),
           nqp::stmts(
             $result.Bool,  # handle Failure
-            (die "at $pos: invalid number token $text.substr($start,$end - $start)")
+            (die "at $pos: invalid number token $text.substr($start,$end - $start)\n" ~ context-for-error-report($text, $pos))
           ),
           nqp::stmts(
             ($pos = $end),
@@ -702,36 +724,38 @@ module JSON::Fast:ver<0.19> {
         )
     }
 
-    my sub die-end-in-comment(str $text, int $pos) is hidden-from-backtrace {
-        die "reached end of input inside comment";
+    my sub die-end-in-comment(str $text, int $pos, int $startpos) is hidden-from-backtrace {
+        die "reached end of input inside comment\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
-    my sub die-missing-object-key(str $text, int $pos) is hidden-from-backtrace {
-        die $pos == nqp::chars($text)
+    my sub die-missing-object-key(str $text, int $pos, int $startpos) is hidden-from-backtrace {
+        die ($pos == nqp::chars($text)
           ?? "at end of input: expected a quoted string for an object key"
-          !! "at $pos: json requires object keys to be strings";
+          !! "at $pos: json requires object keys to be strings") ~ "\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
-    my sub die-unexpected-partitioner(str $text, int $pos) is hidden-from-backtrace {
-        die "at $pos, unexpected partitioner '{
-            nqp::substr($text,$pos,1)
-        }' inside list of things in an array";
+    my sub die-unexpected-partitioner(str $text, int $pos, int $startpos) is hidden-from-backtrace {
+        die ($pos == nqp::chars($text)
+          ?? "at end of input: expected a partitioner inside list of things"
+          !! "at $pos, unexpected partitioner '{
+                nqp::substr($text,$pos,1)
+              }' inside list of things in an array") ~ "\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
-    my sub die-missing-colon(str $text, int $pos) is hidden-from-backtrace {
-        die "expected to see a ':' after an object key at $pos";
+    my sub die-missing-colon(str $text, int $pos, int $startpos) is hidden-from-backtrace {
+        die "expected to see a ':' after an object key at $pos\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
-    my sub die-unexpected-end-of-object(str $text, int $pos) is hidden-from-backtrace {
-        die $pos == nqp::chars($text)
+    my sub die-unexpected-end-of-object(str $text, int $pos, int $startpos = -1) is hidden-from-backtrace {
+        die ($pos == nqp::chars($text)
           ?? "at end of input: unexpected end of object."
-          !! "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos";
+          !! "unexpected '{ nqp::substr($text, $pos, 1) }' in an object at $pos") ~ "\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
-    my sub die-unexpected-object(str $text, int $pos) is hidden-from-backtrace {
-        die "at $pos: expected a json object, but got '{
-          nqp::substr($text, $pos, 8).perl
-        }'";
+    my sub die-expected-object(str $text, int $pos, int $startpos) is hidden-from-backtrace {
+        die ($pos == nqp::chars($text)
+          ?? "at end of input: expected a json object"
+          !! "at $pos: expected a json object") ~ "\n" ~ context-for-error-report($text, $pos, $startpos);
     }
 
     my sub parse-obj(str $text, int $pos is rw) {
@@ -740,6 +764,8 @@ module JSON::Fast:ver<0.19> {
           nqp::getattr(%result,Map,'$!storage'),
           nqp::bindattr(%result,Map,'$!storage',nqp::hash)
         );
+
+        my int $startpos = $pos;
 
         nom-ws($text, $pos);
         my int $ordinal = nqp::ordat($text, $pos);
@@ -758,13 +784,13 @@ module JSON::Fast:ver<0.19> {
                   nqp::if(
                     nqp::iseq_i($ordinal, 34),  # "
                     (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
-                    die-missing-object-key($text, $pos)
+                    die-missing-object-key($text, $pos, $startpos)
                   ),
                   nom-ws($text, $pos),
                   nqp::if(
                     nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
                     ($pos = nqp::add_i($pos, 1)),
-                    die-missing-colon($text, $pos)
+                    die-missing-colon($text, $pos, $startpos)
                   ),
                   nom-ws($text, $pos),
                   nqp::bindkey($hash, $key,
@@ -779,7 +805,7 @@ module JSON::Fast:ver<0.19> {
                     ),
                     nqp::unless(
                       nqp::iseq_i($ordinal, 44),  # ,
-                      die-unexpected-end-of-object($text, $pos)
+                      die-unexpected-end-of-object($text, $pos, $startpos)
                     )
                   ),
                   nom-ws($text, $pos = nqp::add_i($pos,1)),
@@ -797,6 +823,9 @@ module JSON::Fast:ver<0.19> {
           my $buffer := nqp::create(IterationBuffer));
 
         nom-ws($text, $pos);
+
+        my int $startpos = $pos;
+
         nqp::if(
           nqp::eqat($text, ']', $pos),
           nqp::stmts(
@@ -824,7 +853,7 @@ module JSON::Fast:ver<0.19> {
                       nqp::push($buffer,nqp::p6scalarwithvalue($descriptor,$thing)),
                       ($pos = nqp::add_i($pos,1))
                     ),
-                    die-unexpected-partitioner($text, $pos)
+                    die-unexpected-partitioner($text, $pos, $startpos)
                   )
                 )
               )
@@ -840,6 +869,7 @@ module JSON::Fast:ver<0.19> {
     my sub parse-thing(str $text, int $pos is rw) {
         nom-ws($text, $pos);
         my int $ordinal = nqp::ordat($text, $pos);
+        my int $startpos = $pos;
 
         nqp::iseq_i($ordinal,34)                     # "
           ?? parse-string($text, $pos = $pos + 1)
@@ -856,7 +886,7 @@ module JSON::Fast:ver<0.19> {
                     ?? parse-false($pos)
                     !! nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos)
                       ?? parse-null($pos)
-                      !! die-unexpected-object($text, $pos)
+                      !! die-expected-object($text, $pos, $startpos)
     }
 
 # Needed so that subroutines can return native hashes without them
@@ -885,6 +915,9 @@ module JSON::Fast:ver<0.19> {
         my $map := nqp::create(IterationMap);
 
         nom-ws($text, $pos);
+
+        my int $startpos = $pos;
+
         my int $ordinal = nqp::ordat($text, $pos);
         nqp::if(
           nqp::iseq_i($ordinal, 125),  # }             {
@@ -899,13 +932,13 @@ module JSON::Fast:ver<0.19> {
                 nqp::if(
                   nqp::iseq_i($ordinal, 34),  # "
                   (my $key := parse-string($text, $pos = nqp::add_i($pos,1))),
-                  die-missing-object-key($text, $pos)
+                  die-missing-object-key($text, $pos, $startpos)
                 ),
                 nom-ws($text, $pos),
                 nqp::if(
                   nqp::iseq_i(nqp::ordat($text, $pos), 58),  # :
                   ($pos = nqp::add_i($pos, 1)),
-                  die-missing-colon($text, $pos)
+                  die-missing-colon($text, $pos, $startpos)
                 ),
                 nom-ws($text, $pos),
                 nqp::bindkey($map, $key,parse-thing-immutable($text, $pos)),
@@ -919,7 +952,7 @@ module JSON::Fast:ver<0.19> {
                   ),
                   nqp::unless(
                     nqp::iseq_i($ordinal, 44),  # ,
-                    die-unexpected-end-of-object($text, $pos)
+                    die-unexpected-end-of-object($text, $pos, $startpos)
                   )
                 ),
                 nom-ws($text, $pos = nqp::add_i($pos,1)),
@@ -934,6 +967,9 @@ module JSON::Fast:ver<0.19> {
         my $list := nqp::create(IterationBuffer);
 
         nom-ws($text, $pos);
+
+        my int $startpos = $pos;
+
         nqp::if(
           nqp::eqat($text, ']', $pos),
           nqp::stmts(
@@ -960,7 +996,7 @@ module JSON::Fast:ver<0.19> {
                       nqp::push($list, $thing),
                       ($pos = nqp::add_i($pos,1))
                     ),
-                    die-unexpected-partitioner($text, $pos)
+                    die-unexpected-partitioner($text, $pos, $startpos)
                   )
                 )
               )
@@ -972,6 +1008,7 @@ module JSON::Fast:ver<0.19> {
     my sub parse-thing-immutable(str $text, int $pos is rw) {
         nom-ws($text, $pos);
         my int $ordinal = nqp::ordat($text, $pos);
+        my int $startpos = $pos;
 
         nqp::iseq_i($ordinal,34)                     # "
           ?? parse-string($text, $pos = $pos + 1)
@@ -988,7 +1025,7 @@ module JSON::Fast:ver<0.19> {
                     ?? parse-false($pos)
                     !! nqp::iseq_i($ordinal,110) && nqp::eqat($text,'null',$pos)
                       ?? parse-null($pos)
-                      !! die-unexpected-object($text, $pos)
+                      !! die-expected-object($text, $pos, $startpos)
     }
 
     my sub may-die-additional-content($parsed, str $text, int $pos is rw) is hidden-from-backtrace {
