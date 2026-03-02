@@ -75,7 +75,7 @@ Specifies whether keys from objects should be sorted before serializing them to 
 ### from-json
 
         my $x = from-json '["foo", "bar", {"ber": "bor"}]';
-        say $x.perl;
+        say $x.raku;
         # outputs: $["foo", "bar", {:ber("bor")}]
 
 Takes one positional argument that is coerced into a `Str` type and represents a JSON text to decode. Returns a Raku datastructure representing that JSON.

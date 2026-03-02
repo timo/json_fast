@@ -83,7 +83,7 @@ as their underlying values, instead of as the name of the C<enum>.
 
 =for code
     my $x = from-json '["foo", "bar", {"ber": "bor"}]';
-    say $x.perl;
+    say $x.raku;
     # outputs: $["foo", "bar", {:ber("bor")}]
 
 Takes one positional argument that is coerced into a C<Str> type and represents
@@ -590,7 +590,7 @@ module JSON::Fast:ver<0.19> {
                       $adder
                     )),
                     (die "invalid hexadecimal char {
-                        nqp::chr($ordinal).perl
+                        nqp::chr($ordinal).raku
                     } in \\u sequence at $pos")
                   )
                 ),
@@ -649,7 +649,7 @@ module JSON::Fast:ver<0.19> {
             nqp::if(                                           # not an escape
               nqp::iseq_i($ordinal, 9) || nqp::iseq_i($ordinal, 10),  # \t \n
               (die "this kind of whitespace is not allowed in a string: '{
-                  nqp::chr($ordinal).perl
+                  nqp::chr($ordinal).raku
               }' near $pos"),
               nqp::push_i($output, $ordinal)                   # ok codepoint
             )
@@ -730,7 +730,7 @@ module JSON::Fast:ver<0.19> {
 
     my sub die-unexpected-object(str $text, int $pos) is hidden-from-backtrace {
         die "at $pos: expected a json object, but got '{
-          nqp::substr($text, $pos, 8).perl
+          nqp::substr($text, $pos, 8).raku
         }'";
     }
 
