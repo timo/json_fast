@@ -1,5 +1,5 @@
 {
-  "auth": "cpan:TIMOTIMO",
+  "auth": "zef:timo",
   "authors": [
     "Timo Paulssen",
     "Tony O'Dell",
@@ -20,7 +20,7 @@
   },
   "resources": [
   ],
-  "source-url": "git://github.com/timo/json_fast.git",
+  "source-url": "https://github.com/timo/json_fast.git",
   "support": {
     "source": "git://github.com/timo/json_fast.git"
   },
