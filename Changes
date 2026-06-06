@@ -1,6 +1,10 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Improve tests
+    - Fix parsing of /*/ in JSONC
+    - Fix deprecation warnings about .perl method
+    - Parse failures now output a few chars around the error location
 
 0.19  2023-04-30T22:38:25+02:00
     - Allow Callable with :sorted-keys argument
