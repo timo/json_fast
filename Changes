@@ -1,6 +1,8 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+
+0.20  2026-06-06T21:03:43+02:00
     - Improve tests
     - Fix parsing of /*/ in JSONC
     - Fix deprecation warnings about .perl method
