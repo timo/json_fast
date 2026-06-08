@@ -488,7 +488,10 @@ sub run-tests(Str @tests, Bool :$ok, Bool :$todo, Bool :$immutable) {
         try {
             from-json($t, :$immutable);
             $parsed = True;
-            CATCH { default { diag $_ } }
+            CATCH { default {
+                # only output the error if the test is meant to not fail
+                diag $_ unless !$ok
+            } }
         }
         my &test;
         if $ok {
