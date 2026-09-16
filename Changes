@@ -1,6 +1,7 @@
 Revision history for JSON-Fast
 
 {{$NEXT}}
+    - Fix compatibility with RakuAST (lizmat++)
 
 0.20.1  2026-06-08T22:15:27+02:00
     - Don't output a lot of diagnostic output from tests
